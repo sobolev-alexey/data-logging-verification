@@ -1,7 +1,9 @@
 node_modules
 build
 .DS_Store
-.vercel
+.firebaserc
 
 __*
 *.log*
+
+service*.json
