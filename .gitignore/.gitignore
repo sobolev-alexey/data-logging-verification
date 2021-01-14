@@ -1,7 +1,0 @@
-node_modules
-build
-.DS_Store
-.vercel
-
-__*
-*.log*
