@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const admin = require('firebase-admin');
 const firebase = require('firebase');
 const config = require('./data-logging-verification.json');

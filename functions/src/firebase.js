@@ -1,5 +1,9 @@
+require('./firebaseInit');
 const admin = require('firebase-admin');
-require('dotenv').config();
+const functions = require("firebase-functions");
+const { Magic } = require("@magic-sdk/admin");
+const magic = new Magic(process.env.MAGIC_SECRET_API_KEY);
+const { handleExistingUser, handleNewUser } = require("./helpers");
 
 exports.setUser = async (uid, obj) => {
   await admin.firestore().collection('users').doc(uid).set(obj);
@@ -81,11 +85,27 @@ exports.getEncryption = async () => {
   throw Error(message);
 };
 
-exports.userLogin = async email => {
-  const { Magic } = require("@magic-sdk/admin");
-  const magic = new Magic(process.env.MAGIC_SECRET_API_KEY);
-  console.log("HEREE");
+exports.auth = functions.https.onCall(async (data, context) => {
+  const didToken = data.didToken;
+  const metadata = await magic.users.getMetadataByToken(didToken);
+  const email = metadata.email;
+  try {
+    /* Get existing user by email address,
+       compatible with legacy Firebase email users */
+    let user = (await admin.auth().getUserByEmail(email)).toJSON();
+    const claim = magic.token.decode(didToken)[1];
+    return await handleExistingUser(user, claim);
+  } catch (err) {
+    if (err.code === "auth/user-not-found") {
+      /* Create new user */
+      return await handleNewUser(email);
+    } else {
+      throw err;
+    }
+  }
+});
 
+exports.userLogin = async email => {
   /* Get users */
   const usersCollection = await admin
     .firestore()
