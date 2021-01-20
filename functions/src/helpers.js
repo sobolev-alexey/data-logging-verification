@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const NodeRSA = require('node-rsa');
 const serviceAccount = require('./serviceAccount.json');
 const publicKey = new NodeRSA().importKey(serviceAccount.private_key, "pkcs8-private-pem").exportKey("pkcs8-public-pem");
+// const admin = require('firebase-admin');
 
 const verifyToken = async token => {
   const promise = new Promise(resolve => {
@@ -17,5 +18,5 @@ const verifyToken = async token => {
 };
 
 module.exports = {
-  verifyToken
+  verifyToken,
 };

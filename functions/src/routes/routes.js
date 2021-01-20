@@ -2,7 +2,8 @@ const cors = require('cors');
 const { 
     createUpdateUser, 
     verifyToken, 
-    getUser, 
+    getUser,
+    userLogin,
 } = require("./controller");
 const { isAuthenticated } = require("../auth/authenticated");
 const { isAuthorized } = require("../auth/authorized");
@@ -30,7 +31,8 @@ exports.routesConfig = app => {
     app.post('/verify', cors(corsOptions), verifyToken);
     app.post('/update', cors(corsOptions), isAuthenticated, createUpdateUser);
     app.post('/user', cors(corsOptions), isAuthenticated, getUser);
+    app.post('/test-auth', cors(corsOptions), userLogin);
 
-    app.get('/test', createTestToken);
-    app.post('/test', createTestToken);
+    // app.get('/test', createTestToken);
+    // app.post('/test', createTestToken);
 }

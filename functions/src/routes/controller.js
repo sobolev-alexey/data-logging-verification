@@ -5,6 +5,7 @@ const { verifyToken } = require("../helpers");
 const { decrypt } = require("../encryption");
 const {
     getUser,
+    userLogin
 } = require("../firebase");
 
 exports.createUpdateUser = async (req, res) => {
@@ -93,6 +94,23 @@ exports.createTestToken = async (req, res) => {
         const token = await admin.auth().createCustomToken(userId, claims);
         console.log('createTestToken', token);
         return res.json({ status: "success", token });
+    } catch (error) {
+        return res.send({ status: "error", error: error.message, code: error.code });
+    };
+};
+
+exports.userLogin = async (req, res) => {
+    try {
+        // Check Fields
+        const params = req.body;
+        if (!params || !params.email) {
+            console.error("Get user user email failed. Params: ", params);
+            return res.status(400).json({ error: "Ensure your email is provided" });
+        }
+        // Retrieve user
+        const user = await userLogin(params.email);
+
+        return res.json({ user, status: "success" });
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };
