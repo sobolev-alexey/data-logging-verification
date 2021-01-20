@@ -93,7 +93,7 @@ exports.userLogin = async email => {
         .generateSignInWithEmailLink(email, settings)
         .then((link) => {
             firebase.auth().sendSignInLinkToEmail(email, settings);
-            // firebase.auth().signInWithEmailLink(email, link);
+            firebase.auth().signInWithEmailLink(email, link);
             // console.log("link", link);
   })
   } catch(error) {
