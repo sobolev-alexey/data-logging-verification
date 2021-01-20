@@ -88,12 +88,20 @@ exports.userLogin = async email => {
         url: 'https://www.example.com',
         handleCodeInApp: true,
       };
-      await firebase.auth().sendSignInLinkToEmail(email, settings);
+      admin
+        .auth()
+        .generateSignInWithEmailLink(email, settings)
+        .then((link) => {
+            firebase.auth().sendSignInLinkToEmail(email, settings);
+            // firebase.auth().signInWithEmailLink(email, link);
+            // console.log("link", link);
+  })
   } catch(error) {
       console.error(error);
       throw error;
   }
 }
+
 
 
 
