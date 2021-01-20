@@ -1,9 +1,6 @@
 require('./firebaseInit');
 const admin = require('firebase-admin');
-const functions = require("firebase-functions");
-const { Magic } = require("@magic-sdk/admin");
-const magic = new Magic(process.env.MAGIC_SECRET_API_KEY);
-const { handleExistingUser, handleNewUser } = require("./helpers");
+const firebase = require('firebase');
 
 exports.setUser = async (uid, obj) => {
   await admin.firestore().collection('users').doc(uid).set(obj);
@@ -85,51 +82,19 @@ exports.getEncryption = async () => {
   throw Error(message);
 };
 
-exports.auth = functions.https.onCall(async (data, context) => {
-  const didToken = data.didToken;
-  const metadata = await magic.users.getMetadataByToken(didToken);
-  const email = metadata.email;
-  try {
-    /* Get existing user by email address,
-       compatible with legacy Firebase email users */
-    let user = (await admin.auth().getUserByEmail(email)).toJSON();
-    const claim = magic.token.decode(didToken)[1];
-    return await handleExistingUser(user, claim);
-  } catch (err) {
-    if (err.code === "auth/user-not-found") {
-      /* Create new user */
-      return await handleNewUser(email);
-    } else {
-      throw err;
-    }
-  }
-});
-
 exports.userLogin = async email => {
-  /* Get users */
-  const usersCollection = await admin
-    .firestore()
-    .collection('users');
-
-  if (email) {
-    const didToken = await magic.auth.loginWithMagicLink({ email });
-    const auth = firebase.functions().httpsCallable("auth");
-    let result = (await auth({ didToken })).data;
-    await firebase.auth().signInWithCustomToken(result.token);
-    let user = await usersCollection.doc(result.uid).get();
-    if (!user.exists) {
-      /* Add new user to database */
-      let newUser = {
-        email: email,
+  try {
+      const settings = {
+        url: 'https://www.example.com',
+        handleCodeInApp: true,
       };
-      await usersCollection.doc(result.uid).set(newUser);
-      console.log(`User ${email} just signed up!`);
-    }
+      await firebase.auth().sendSignInLinkToEmail(email, settings);
+  } catch(error) {
+      console.error(error);
+      throw error;
   }
-  return true;
-};
+}
 
-exports.userLogout = async () => {
-  await magic.user.logout();
-  await firebase.auth().signOut();
-};
+
+
+
