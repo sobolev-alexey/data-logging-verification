@@ -102,7 +102,77 @@ exports.userLogin = async email => {
   }
 }
 
+exports.register = async email => {
+  try {
+      admin
+        .auth()
+        .createUser({
+          email: email,
+          emailVerified: false
+        })
+        .then((userRecord) => {
+          // See the UserRecord reference doc for the contents of userRecord.
+          console.log('Successfully created new user:', userRecord.toJSON());
 
+          const settings = {
+            url: `https://us-central1-data-logging-verification.cloudfunctions.net/api/register-complete/?uid=${userRecord && userRecord.uid}`,
+            handleCodeInApp: true,
+          };
+
+          admin
+            .auth()
+            .generateEmailVerificationLink(email, settings)
+            .then((link) => {
+              console.log("link", link);
+              firebase.auth().sendSignInLinkToEmail(email, settings)
+                .then(async () => {
+                  console.log("email success");
+                  // The link was successfully sent. Inform the user. Save the email
+                  // locally so you don't need to ask the user for it again if they open
+                  // the link on the same device.
+                })
+                .catch(error => {
+                  console.log("email error", error);
+                  // Some error occurred, you can inspect the code: error.code
+                });
+            })
+        })
+        .catch((error) => {
+          console.log('Error creating new user:', error);
+        });
+  } catch(error) {
+      console.error(error);
+      throw error;
+  }
+}
+
+exports.completeRegistration = async uid => {
+  try {
+    const promise = new Promise((resolve, reject) => {
+      admin
+        .auth()
+        .getUser(uid)
+        .then(async (userRecord) => {
+          await admin.auth().updateUser(uid, {
+            ...userRecord,
+            emailVerified: true
+          });
+
+          console.log(`Successfully fetched user data:`, userRecord.uid, uid);
+          const token = await admin.auth().createCustomToken(userRecord.uid);
+          resolve(token);
+        })
+        .catch((error) => {
+          console.log('Error fetching user data:', error);
+          reject(error);
+        });
+    });
+    return promise;
+  } catch(error) {
+      console.error(error);
+      throw error;
+  }
+}
 
 
 

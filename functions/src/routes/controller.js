@@ -5,6 +5,8 @@ const { verifyToken } = require("../helpers");
 const { decrypt } = require("../encryption");
 const {
     getUser,
+    register,
+    completeRegistration,
     userLogin
 } = require("../firebase");
 
@@ -111,6 +113,41 @@ exports.userLogin = async (req, res) => {
         const user = await userLogin(params.email);
 
         return res.json({ user, status: "success" });
+    } catch (error) {
+        return res.send({ status: "error", error: error.message, code: error.code });
+    };
+};
+
+exports.register = async (req, res) => {
+    try {
+        // Check Fields
+        const params = req.body;
+        if (!params || !params.email) {
+            console.error("Get user user email failed. Params: ", params);
+            return res.status(400).json({ error: "Ensure your email is provided" });
+        }
+        // Retrieve user
+        const user = await register(params.email);
+
+        return res.json({ user, status: "success" });
+    } catch (error) {
+        return res.send({ status: "error", error: error.message, code: error.code });
+    };
+};
+
+exports.completeRegistration = async (req, res) => {
+    try {
+        // Check Fields
+        const params = req.query;
+        if (!params || !params.uid) {
+            console.error("Get user by ID failed. Params: ", params);
+            return res.status(400).json({ error: "Ensure your user ID is provided" });
+        }
+        console.log('completeRegistration', params.uid);
+        const token = await completeRegistration(params && params.uid);
+        console.log('token', token);
+
+        return res.json({ status: "success", token });
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };

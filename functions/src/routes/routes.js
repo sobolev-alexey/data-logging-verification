@@ -4,6 +4,8 @@ const {
     verifyToken, 
     getUser,
     userLogin,
+    register,
+    completeRegistration
 } = require("./controller");
 const { isAuthenticated } = require("../auth/authenticated");
 const { isAuthorized } = require("../auth/authorized");
@@ -33,6 +35,8 @@ exports.routesConfig = app => {
     app.post('/user', cors(corsOptions), isAuthenticated, getUser);
     app.post('/test-auth', cors(corsOptions), userLogin);
 
+    app.post('/register', register);
+    app.get('/register-complete', completeRegistration);
     // app.get('/test', createTestToken);
     // app.post('/test', createTestToken);
 }
