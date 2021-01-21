@@ -102,48 +102,12 @@ exports.userLogin = async email => {
   }
 }
 
-exports.register = async email => {
-  try {
-      admin
-        .auth()
-        .createUser({
-          email: email,
-          emailVerified: false
-        })
-        .then((userRecord) => {
-          // See the UserRecord reference doc for the contents of userRecord.
-          console.log('Successfully created new user:', userRecord.toJSON());
+exports.register = async (email, publicKey, user) => {
+  await admin.firestore().collection('users').doc(email).set({
+    email, publicKey, uid: user.uid, emailVerified: user.emailVerified
+  });
 
-          const settings = {
-            url: `https://us-central1-data-logging-verification.cloudfunctions.net/api/register-complete/?uid=${userRecord && userRecord.uid}`,
-            handleCodeInApp: true,
-          };
-
-          admin
-            .auth()
-            .generateEmailVerificationLink(email, settings)
-            .then((link) => {
-              console.log("link", link);
-              firebase.auth().sendSignInLinkToEmail(email, settings)
-                .then(async () => {
-                  console.log("email success");
-                  // The link was successfully sent. Inform the user. Save the email
-                  // locally so you don't need to ask the user for it again if they open
-                  // the link on the same device.
-                })
-                .catch(error => {
-                  console.log("email error", error);
-                  // Some error occurred, you can inspect the code: error.code
-                });
-            })
-        })
-        .catch((error) => {
-          console.log('Error creating new user:', error);
-        });
-  } catch(error) {
-      console.error(error);
-      throw error;
-  }
+  return true;
 }
 
 exports.completeRegistration = async uid => {
