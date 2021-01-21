@@ -122,14 +122,56 @@ exports.register = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-        if (!params || !params.email) {
-            console.error("Get user user email failed. Params: ", params);
-            return res.status(400).json({ error: "Ensure your email is provided" });
+        if (!params || !params.email || !params.publicKey) {
+            console.error("Register user failed. Params: ", params);
+            return res.status(400).json({ error: "Ensure all fields are provided" });
         }
-        // Retrieve user
-        const user = await register(params.email);
 
-        return res.json({ user, status: "success" });
+        admin
+            .auth()
+            .createUser({
+                email: params.email,
+                emailVerified: false
+            })
+            .then(async (userRecord) => {
+                // See the UserRecord reference doc for the contents of userRecord.
+                console.log('Successfully created new user:', userRecord.toJSON());
+        
+                const settings = {
+                    url: `https://us-central1-data-logging-verification.cloudfunctions.net/api/register-complete/?uid=${userRecord && userRecord.uid}`,
+                    handleCodeInApp: true,
+                };
+
+                firebase.auth().sendSignInLinkToEmail(params.email, settings)
+                    .then(async () => {
+                        await register(userRecord.uid, params.publicKey, userRecord);
+                        console.log(`Email confirmation sent to ${params.email}`);
+                    })
+                    .catch(error => console.log("email error", error));
+
+                
+                let token;
+                let confirmed = false;
+                for await (const retry of Array.from(new Array(100), (x,i) => i)) {
+                    !confirmed && userRecord && admin
+                        .auth()
+                        .getUser(userRecord.uid)
+                        .then(async (user) => {
+                            // console.log('Registration user', retry, user.uid, user.emailVerified);
+                            if (user && user.emailVerified) {
+                                token = await admin.auth().createCustomToken(user.uid);
+                                confirmed = true;
+                                console.log(`Email address ${user.email} successfully verified. UID: ${user.uid}`);
+                            }
+                    })
+                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 5000));
+                };
+
+                return res.send({ status: "success", token });
+            })
+            .catch((error) => {
+                console.log(`Error creating new user with email ${params.email}`, error);
+            });
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };
@@ -143,11 +185,22 @@ exports.completeRegistration = async (req, res) => {
             console.error("Get user by ID failed. Params: ", params);
             return res.status(400).json({ error: "Ensure your user ID is provided" });
         }
-        console.log('completeRegistration', params.uid);
-        const token = await completeRegistration(params && params.uid);
-        console.log('token', token);
+        admin
+            .auth()
+            .getUser(params.uid)
+            .then(async (userRecord) => {
+                await admin.auth().updateUser(params.uid, {
+                    ...userRecord,
+                    emailVerified: true
+                });
+                await completeRegistration(params.uid);
 
-        return res.json({ status: "success", token });
+                console.log(`Successfully confirmed email for user`, userRecord.uid, userRecord.email);
+            })
+            .catch((error) => {
+                console.log(`Error confirming user email ${params.uid}`, error);
+            });
+        return res.json({ status: "success" });
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };

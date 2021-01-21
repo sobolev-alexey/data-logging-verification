@@ -102,38 +102,26 @@ exports.userLogin = async email => {
   }
 }
 
-exports.register = async (email, publicKey, user) => {
-  await admin.firestore().collection('users').doc(email).set({
-    email, publicKey, uid: user.uid, emailVerified: user.emailVerified
-  });
+exports.register = async (uid, publicKey, user) => {
+  try {
+    await admin.firestore().collection('users').doc(uid).set({
+      publicKey, uid, emailVerified: user.emailVerified, email: user.email
+    });
 
-  return true;
+    return true;
+  } catch(error) {
+    console.error('Firebase register', error);
+    throw error;
+  }
 }
 
 exports.completeRegistration = async uid => {
   try {
-    const promise = new Promise((resolve, reject) => {
-      admin
-        .auth()
-        .getUser(uid)
-        .then(async (userRecord) => {
-          await admin.auth().updateUser(uid, {
-            ...userRecord,
-            emailVerified: true
-          });
-
-          console.log(`Successfully fetched user data:`, userRecord.uid, uid);
-          const token = await admin.auth().createCustomToken(userRecord.uid);
-          resolve(token);
-        })
-        .catch((error) => {
-          console.log('Error fetching user data:', error);
-          reject(error);
-        });
-    });
-    return promise;
+    await admin.firestore().collection('users').doc(uid).set({
+      emailVerified: true
+    }, { merge: true });
   } catch(error) {
-      console.error(error);
+      console.error('Firebase completeRegistration', error);
       throw error;
   }
 }
