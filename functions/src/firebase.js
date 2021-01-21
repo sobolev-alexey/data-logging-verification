@@ -115,9 +115,9 @@ exports.register = async (uid, publicKey, user) => {
   }
 }
 
-exports.completeRegistration = async uid => {
+exports.completeRegistration = async user => {
   try {
-    await admin.firestore().collection('users').doc(uid).set({
+    await admin.firestore().collection('users').doc(user.uid).set({
       emailVerified: true
     }, { merge: true });
   } catch(error) {

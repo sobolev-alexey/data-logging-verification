@@ -152,7 +152,7 @@ exports.register = async (req, res) => {
                 
                 let token;
                 let confirmed = false;
-                for await (const retry of Array.from(new Array(100), (x,i) => i)) {
+                for await (const retry of Array.from(new Array(250), (x,i) => i)) {
                     !confirmed && userRecord && admin
                         .auth()
                         .getUser(userRecord.uid)
@@ -164,7 +164,7 @@ exports.register = async (req, res) => {
                                 console.log(`Email address ${user.email} successfully verified. UID: ${user.uid}`);
                             }
                     })
-                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 5000));
+                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 2000));
                 };
 
                 return res.send({ status: "success", token });
@@ -193,7 +193,7 @@ exports.completeRegistration = async (req, res) => {
                     ...userRecord,
                     emailVerified: true
                 });
-                await completeRegistration(params.uid);
+                await completeRegistration(userRecord);
 
                 console.log(`Successfully confirmed email for user`, userRecord.uid, userRecord.email);
             })
