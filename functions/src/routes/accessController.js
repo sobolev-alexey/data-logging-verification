@@ -3,7 +3,7 @@ const admin = require('firebase-admin');
 const firebase = require('firebase');
 const { firebaseUrl } = require('../config');
 const { verifyToken } = require("../helpers");
-// const { decrypt } = require("../encryption");
+const { verifySignature } = require("../encryption");
 const {
     getUser,
     register,
@@ -54,9 +54,14 @@ exports.login = async (req, res) => {
                 const user = await getUser(userRecord.uid);
                 
                 // Check signature
+                const signature = Buffer.from(JSON.parse(params.signature));
+                const verificationResult = verifySignature(user.publicKey, { email: params.email }, signature);
+                console.log('Login signature', verificationResult);
 
-
-
+                if (!verificationResult) {
+                    return res.status(400).send({ status: "error", error: 'Wrong signature' });
+                }
+                
                 const options = {
                     url: `${firebaseUrl}/login-complete/?uid=${userRecord.uid}`,
                     handleCodeInApp: true,
@@ -92,45 +97,6 @@ exports.login = async (req, res) => {
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };
-    // try {
-        // Check Fields
-        // const params = req.body;
-        // if (!params || !params.email) {
-        //     return res.status(400).json({ error: "Ensure all fields are included" });
-        // }
-
-        // const token = await verifyToken(params.token);
-        // console.log('Token data', token);
-        // admin
-        // .auth()
-        // .getUserByEmail(params.email)
-        // .then(async (userRecord) => {
-        //     const token = await admin.auth().createCustomToken(userRecord.uid);
-        //     console.log('Token:', token);
-        // })
-        // .catch((error) => {
-        //     console.log('Error fetching user data:', error);
-        // });
-    //     return res.json({ status: "success" });
-    // } catch (error) {
-    //     console.log('Token error');
-    //     return res.send({ status: "error", error: error.message, code: error.code });
-    // };
-    
-    // try {
-    //     // Check Fields
-    //     const params = req.body;
-    //     if (!params || !params.email) {
-    //         console.error("Get user user email failed. Params: ", params);
-    //         return res.status(400).json({ error: "Ensure your email is provided" });
-    //     }
-    //     // Retrieve user
-    //     const user = await userLogin(params.email);
-
-    //     return res.json({ user, status: "success" });
-    // } catch (error) {
-    //     return res.send({ status: "error", error: error.message, code: error.code });
-    // };
 };
 
 exports.register = async (req, res) => {
