@@ -1,18 +1,74 @@
-const crypto = require('crypto');
-const { getEncryption } = require("./firebase");
+const NodeRSA = require('node-rsa');
 
-exports.decrypt = async encrypted => {
-  try {
-    const { encryption } = await getEncryption();
-    const ENC_KEY = Buffer.from(encryption.keyString).toString('hex').slice(0, 32);
-    const IV = Buffer.from(encryption.ivString).toString('hex').slice(0, 16);
+const publicEncrypt = (publicKey, message) => {
+    try {
+        const publicKeyInstance = getPublicKeyInstance(publicKey);
+        return JSON.stringify(
+            publicKeyInstance.encrypt(Buffer.from(message))
+        );
+    } catch (error) {
+        throw new Error(error);
+    }
+}
 
-    const decipher = crypto.createDecipheriv('aes-256-cbc', ENC_KEY, IV);
-    const decrypted = decipher.update(encrypted, 'base64', 'utf8');
-    const final = decipher.final('utf8');
-    return decrypted + final;
-  } catch (error) {
-    console.log('decrypt ERROR', encrypted);
-    throw new Error(error);
-  }
+const privateDecrypt = (privateKey, input) => {
+    try {
+        const privateKeyInstance = getPrivateKeyInstance(privateKey);
+        const decrypted = privateKeyInstance.decrypt(
+            Buffer.from(JSON.parse(input))
+        );
+        return JSON.parse(decrypted.toString());
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+const signMessage = (privateKey, dataToSign) => {
+    try {
+        const privateKeyInstance = getPrivateKeyInstance(privateKey);
+        return privateKeyInstance.sign(
+            Buffer.from(JSON.stringify(dataToSign))
+        );
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+const verifySignature = (publicKey, dataToCheck, signatureToVerify) => {
+    try {
+        const publicKeyInstance = getPublicKeyInstance(publicKey);
+        return publicKeyInstance.verify(
+            Buffer.from(JSON.stringify(dataToCheck)), 
+            Buffer.from(signatureToVerify)
+        );
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+const getPublicKeyInstance = (publicKey) => {
+    try {
+        const nodeRSA = new NodeRSA();
+        return nodeRSA.importKey(publicKey, 'public');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+const getPrivateKeyInstance = (privateKey) => {
+    try {
+        const nodeRSA = new NodeRSA();
+        return nodeRSA.importKey(privateKey, 'private');
+    } catch (error) {
+        throw new Error(error);
+    }
+}
+
+module.exports = {
+  publicEncrypt,
+  privateDecrypt,
+  signMessage,
+  verifySignature,
+  getPublicKeyInstance,
+  getPrivateKeyInstance
 };
