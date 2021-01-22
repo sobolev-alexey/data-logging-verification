@@ -25,11 +25,12 @@ exports.isAuthenticated = async (req, res, next) => {
                     email: user.email,
                     emailVerified: user.emailVerified
                 };
+                return next();
             })
             .catch((error) => {
                 console.error('verifyToken', error.code, error.message);
+                return res.status(401).send({ message: 'Unauthorized' });
             });
-            return next();
     }
     catch (err) {
         console.error(`${err.code} -  ${err.message}`);
