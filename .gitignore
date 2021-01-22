@@ -6,4 +6,4 @@ build
 __*
 *.log*
 
-service*.json
+*.json
