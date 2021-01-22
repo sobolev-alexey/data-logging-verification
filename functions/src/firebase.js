@@ -60,5 +60,16 @@ exports.completeRegistration = async uid => {
   }
 }
 
+exports.completeLogin = async (uid, flag) => {
+  try {
+    await admin.firestore().collection('users').doc(uid).set({
+      loginConfirmed: flag
+    }, { merge: true });
+  } catch(error) {
+      console.error('Firebase completeRegistration', error);
+      throw error;
+  }
+}
+
 
 
