@@ -18,27 +18,18 @@
     }
   ],
   "dependencies": {
-    "@iota/bundle-validator": "1.0.0-beta.30",
-    "@iota/client-load-balancer": "github:iotaledger/client-load-balancer",
-    "@iota/converter": "1.0.0-beta.30",
-    "@iota/core": "1.0.0-beta.30",
+    "@iota/converter": "^1.0.0-beta.30",
+    "@iota/core": "^1.0.0-beta.30",
     "@iota/mam.js": "github:iotaledger/mam.js",
-    "@iota/transaction-converter": "1.0.0-beta.30",
-    "axios": "^0.21.0",
+    "axios": "^0.21.1",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "express": "^4.17.1",
-    "firebase": "^8.2.3",
+    "firebase": "^8.2.4",
     "firebase-admin": "^9.4.2",
-    "firebase-functions": "^3.11.0",
-    "firebase-tools": "^9.2.1",
-    "jsonwebtoken": "^8.5.1",
+    "firebase-functions": "^3.13.1",
     "node-rsa": "^1.1.1",
-    "randomstring": "^1.1.5",
-    "uuid": "^8.3.1"
-  },
-  "devDependencies": {
-    "@firebase/app-types": "^0.6.1"
+    "randomstring": "^1.1.5"
   },
   "engines": {
     "node": "12"
