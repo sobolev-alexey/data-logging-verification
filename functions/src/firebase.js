@@ -1,10 +1,6 @@
+require('./firebaseInit');
 const admin = require('firebase-admin');
-
-exports.setUser = async (uid, obj) => {
-  await admin.firestore().collection('users').doc(uid).set(obj);
-
-  return true;
-};
+const firebase = require('firebase');
 
 exports.getUser = async (userId) => {
   // Get user
@@ -25,23 +21,6 @@ exports.getUser = async (userId) => {
   return null;
 };
 
-exports.getServiceAccount = async () => {
-  // Get settings
-  const doc = await admin
-    .firestore()
-    .collection('settings')
-    .doc('settings')
-    .get();
-  if (doc.exists) {
-    const settings = doc.data();
-    return settings.serviceAccount || null;
-  }
-
-  const message = 'getSettings failed. Setting does not exist';
-  console.error(message, doc);
-  throw Error(message);
-};
-
 exports.getSettings = async () => {
   // Get settings
   const doc = await admin
@@ -51,9 +30,7 @@ exports.getSettings = async () => {
     .get();
   if (doc.exists) {
     const settings = doc.data();
-    return {
-      googleMaps: settings.googleMaps,
-    } || null;
+    return settings;
   }
 
   const message = 'getSettings failed. Setting does not exist';
@@ -61,21 +38,38 @@ exports.getSettings = async () => {
   throw Error(message);
 };
 
-exports.getEncryption = async () => {
-  // Get encryption settings
-  const doc = await admin
-    .firestore()
-    .collection('settings')
-    .doc('settings')
-    .get();
-  if (doc.exists) {
-    const settings = doc.data();
-    return {
-      encryption: settings.encryption,
-    } || null;
+exports.register = async (uid, publicKey, user) => {
+  try {
+    await admin.firestore().collection('users').doc(uid).set({
+      publicKey, uid, emailVerified: false, email: user.email
+    });
+  } catch(error) {
+    console.error('Firebase register', error);
+    throw error;
   }
+}
 
-  const message = 'getEncryption failed. Setting does not exist';
-  console.error(message, doc);
-  throw Error(message);
-};
+exports.completeRegistration = async uid => {
+  try {
+    await admin.firestore().collection('users').doc(uid).set({
+      emailVerified: true
+    }, { merge: true });
+  } catch(error) {
+      console.error('Firebase completeRegistration', error);
+      throw error;
+  }
+}
+
+exports.completeLogin = async (uid, flag) => {
+  try {
+    await admin.firestore().collection('users').doc(uid).set({
+      loginConfirmed: flag
+    }, { merge: true });
+  } catch(error) {
+      console.error('Firebase completeRegistration', error);
+      throw error;
+  }
+}
+
+
+
