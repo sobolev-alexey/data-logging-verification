@@ -41,7 +41,20 @@ const verifyToken = async token => {
     return promise;
 };
 
+const isJSON = data => {
+  let hasKeys = false;
+  for (let property in data) {
+      if (data.hasOwnProperty(property) && !(/^\d+$/.test(property))) {
+          hasKeys = true;
+          break;
+      }
+  }
+
+  return (hasKeys && data.constructor === Object && data.constructor !== Array) ? true : false;
+}
+
 module.exports = {
   generateKeys,
   verifyToken,
+  isJSON
 };
