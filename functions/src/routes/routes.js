@@ -1,9 +1,18 @@
 const cors = require('cors');
 const { 
-    createUpdateUser, 
     verifyToken, 
-    getUser, 
-} = require("./controller");
+    // getUser,
+    login,
+    completeLogin,
+    register,
+    completeRegistration
+} = require("./accessController");
+const { 
+    log, 
+    read,
+    verify,
+    trade_verify
+} = require("./dataController");
 const { isAuthenticated } = require("../auth/authenticated");
 const { isAuthorized } = require("../auth/authorized");
 
@@ -26,11 +35,17 @@ const corsOptions = {
 };
 
 exports.routesConfig = app => {
-    app.post('/create', cors(corsOptions), createUpdateUser);
     app.post('/verify', cors(corsOptions), verifyToken);
-    app.post('/update', cors(corsOptions), isAuthenticated, createUpdateUser);
-    app.post('/user', cors(corsOptions), isAuthenticated, getUser);
+    app.post('/login', cors(corsOptions), login);
 
-    app.get('/test', createTestToken);
-    app.post('/test', createTestToken);
+    app.post('/log', cors(corsOptions), isAuthenticated, isAuthorized, log);
+    app.post('/read', cors(corsOptions), isAuthenticated, isAuthorized, read);
+    app.post('/verify', cors(corsOptions), isAuthenticated, isAuthorized, verify);
+    app.post('/trade_verify', cors(corsOptions), isAuthenticated, isAuthorized, trade_verify);
+
+    app.post('/register', register);
+    app.get('/register-complete', completeRegistration);
+    app.get('/login-complete', completeLogin);
+    // app.get('/test', createTestToken);
+    // app.post('/test', createTestToken);
 }

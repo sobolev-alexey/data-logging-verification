@@ -1,21 +1,47 @@
-const jwt = require('jsonwebtoken');
+const firebase = require('firebase');
 const NodeRSA = require('node-rsa');
-const serviceAccount = require('./serviceAccount.json');
-const publicKey = new NodeRSA().importKey(serviceAccount.private_key, "pkcs8-private-pem").exportKey("pkcs8-public-pem");
+
+const generateKeys = () => {
+    try {
+        const keySize = 2048;
+        const rsaKeypair = new NodeRSA({ b: keySize });
+        if (rsaKeypair.getKeySize() === keySize && 
+            rsaKeypair.getMaxMessageSize() >= Math.round(keySize / 10) &&
+            rsaKeypair.isPrivate() &&
+            rsaKeypair.isPublic()
+        ) {
+            return { 
+                publicKey: rsaKeypair.exportKey('public'), 
+                privateKey: rsaKeypair.exportKey('private')
+            };
+        } else {
+            throw new Error('Key generation failed');
+        }
+    } catch (error) {
+        throw new Error(error);
+    }
+}
 
 const verifyToken = async token => {
-  const promise = new Promise(resolve => {
-    jwt.verify(token, publicKey, { algorithms: ["RS256"] }, (err, decoded) => {
-      if (err) {
-        throw new Error(err);
-      } else {
-        resolve(decoded);
-      }
+  const promise = new Promise((resolve, reject) => {
+    firebase.auth().signInWithCustomToken(token)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        resolve({ 
+          uid: user.uid,
+          email: user.email,
+          emailVerified: user.emailVerified
+        });
+      })
+      .catch((error) => {
+        console.error('verifyToken', error.code, error.message);
+        reject(error);
+      });
     });
-  });
-  return promise;
+    return promise;
 };
 
 module.exports = {
-  verifyToken
+  generateKeys,
+  verifyToken,
 };
