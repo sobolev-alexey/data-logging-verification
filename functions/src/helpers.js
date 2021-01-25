@@ -1,5 +1,6 @@
 const firebase = require('firebase');
 const NodeRSA = require('node-rsa');
+const crypto = require('crypto');
 
 const generateKeys = () => {
     try {
@@ -53,8 +54,13 @@ const isJSON = data => {
   return (hasKeys && data.constructor === Object && data.constructor !== Array) ? true : false;
 }
 
+const getHash = payload => {
+  return crypto.createHash('sha256').update(payload).digest('hex');
+};
+
 module.exports = {
   generateKeys,
   verifyToken,
-  isJSON
+  isJSON,
+  getHash,
 };
