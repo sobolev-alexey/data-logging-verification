@@ -1,6 +1,4 @@
-require('./firebaseInit');
 const admin = require('firebase-admin');
-const firebase = require('firebase');
 
 exports.getUser = async (userId) => {
   // Get user
