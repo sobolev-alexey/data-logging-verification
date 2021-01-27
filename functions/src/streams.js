@@ -17,7 +17,7 @@ const generateSeed = (length = 81) => {
   return seed;
 };
 
-const publish = async (payload, tag ='', currentState = null, loggerKey = null) => {
+const publish = async (payload, tag ='', currentState = null, streamId = null, groupId = null) => {
   const logs = [];
 
   const settings = await getSettings();
@@ -68,7 +68,7 @@ const publish = async (payload, tag ='', currentState = null, loggerKey = null) 
         console.log(bundleMessage);
       }
 
-      await logMessage(loggerKey, logs);
+      await logMessage(logs, 'logs', streamId, groupId);
     }
 
     return channelState;
@@ -80,7 +80,7 @@ const publish = async (payload, tag ='', currentState = null, loggerKey = null) 
   }
 }
 
-const fetch = async (channelState, loggerKey = null) => {
+const fetch = async (channelState, streamId = null, groupId = null) => {
   const logs = [];
 
   const settings = await getSettings();
@@ -122,7 +122,7 @@ const fetch = async (channelState, loggerKey = null) => {
         logs.push(message);
       }
 
-      await logMessage(loggerKey, logs);
+      await logMessage(logs, 'logs', streamId, groupId);
     }
 
     return result;
