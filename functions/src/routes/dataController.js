@@ -1,9 +1,14 @@
-// const crypto = require('crypto');
 const admin = require('firebase-admin');
 const firebase = require('firebase');
-// const { decrypt } = require("../encryption");
+const isEmpty = require('lodash/isEmpty');
+const { isJSON, checkMessageTag, getHash } = require("../helpers");
+const { fetch, publish } = require("../streams");
 const {
     getUser,
+    getStreamDetails,
+    getStreamMessages,
+    storeStreamMessage,
+    logMessage
 } = require("../firebase");
 
 
@@ -26,25 +31,116 @@ exports.log = async (req, res) => {
         }
 
         // Get user by ID from cloud database
+        const { uid, email, emailVerified } = res.locals;
+        console.log('LOG 1: ', uid, email, emailVerified);
+        console.log('LOG 2: ', streamId, groupId, type);
 
-        // Verify signature 
+        if (!uid) {
+            return res.status(400).send({ message: 'User ID not found' });
+        }
+        if (!email) {
+            return res.status(400).send({ message: 'User email not found' });
+        }
+        if (!emailVerified) {
+            return res.status(400).send({ message: `User email address ${email} not verified` });
+        }
+
+        const user = await getUser(uid);
 
         // Verify payload type
+        if (isEmpty(params.payload) || !isJSON(params.payload)) {
+            return res.status(400).send({ status: "error", error: 'Wrong payload format' });
+        }
+
+        // Verify tag
+        if (params.tag) {
+            const isValidTag = checkMessageTag(params.tag);
+            if (!isValidTag) {
+                return res.status(400).send({ status: "error", error: 'Wrong message tag' });
+            }
+        }
+
+        // Verify group assignment
+        console.log('User groups', user.groups);
+        if (!user.groups.includes(params.groupId)) {
+            return res.status(400).send({ status: "error", error: 'No access to given group' });
+        }
+
+        // Verify signature 
+        const signature = Buffer.from(JSON.parse(params.signature));
+        const callerSignatureVerificationResult = verifySignature(user.publicKey, params.payload, signature);
+        console.log('Log signature', callerSignatureVerificationResult);
+
+        if (!callerSignatureVerificationResult) {
+            return res.status(400).send({ status: "error", error: 'Wrong signature' });
+        }
 
         // Get existing stream by ID + group ID
+        const streamId = `${params.groupId}__${params.streamId}`;
+        let streamDetails = await getStreamDetails(streamId);
+        let streamMetadata = null;
+
+        console.log('LOG 3: ', JSON.stringify(streamDetails));
 
         // If no stream found, create new stream
+        if (!streamDetails || isEmpty(streamDetails)) {
+            streamDetails = {
+                created: (new Date()).toLocaleString().replace(/\//g, '.'),
+                createdTimestamp: Date.now(),
+                groupId: params.groupId,
+                lastIndex: 0,
+                streamId: params.streamId,
+                writers: [uid]
+            }
+
+            console.log('LOG 4: ', JSON.stringify(streamDetails));
+        } else {
+            streamMetadata = streamDetails && streamDetails.metadata;
+        }
 
         // MAM attach payload
+        const { metadata, explorer } = await publish(
+            params.payload, 
+            params.tag || null, 
+            streamMetadata, 
+            params.streamId, 
+            params.groupId
+        );
 
-        // Store stream metadata
+        if (!metadata || isEmpty(metadata)) {
+            return res.status(400).send({ status: "error", error: 'Stream attach error' });
+        }
+        streamMetadata.metadata = metadata;
+        
+        console.log('LOG 5: ', JSON.stringify(metadata));
 
         // Calculate and store payload hash, timestamp, message index
+        const message = {
+            createdBy: uid,
+            hash: getHash(params.payload),
+            index: metadata && metadata.start,
+            signature: params.signature,
+            type: params.type
+        };
+
+        console.log('LOG 6: ', JSON.stringify(message));
+
+        // Store stream metadata
+        const result = await storeStreamMessage(streamId, metadata, message);
+        if (typeof result !== 'boolean' || !result) {
+            console.error('Store message failed', result);
+            return res.status(400).send({ status: "error", error: 'Error while saving message' });
+        }
+        console.log('LOG 7: ', result);
 
         // Prepare response
-
-        
-        return res.json({ status: "success" });
+        return res.json({ 
+            status: "success",
+            address: metadata.address,
+            root: metadata.root,
+            messageIndex: metadata.start,
+            explorer
+        });
     } catch (error) {
         console.error("Log data failed. Params: ", params, error);
         return res.send({ status: "error", error: error.message, code: error.code });
@@ -94,9 +190,9 @@ exports.verify = async (req, res) => {
 
         // Get user by ID from cloud database
 
-        // Verify signature 
-
         // Verify payload type
+
+        // Verify signature 
 
         // Get existing stream by ID + group ID
 
