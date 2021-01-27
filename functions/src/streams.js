@@ -17,7 +17,7 @@ const generateSeed = (length = 81) => {
   return seed;
 };
 
-const publish = async (payload, tag ='', currentState = null, streamId = null, groupId = null) => {
+const publish = async (payload, tag, currentState = null, streamId = null, groupId = null) => {
   const logs = [];
 
   const settings = await getSettings();
@@ -42,7 +42,6 @@ const publish = async (payload, tag ='', currentState = null, streamId = null, g
     // Create a Streams message using the channel state.
     const message = createMessage(channelState, asciiToTrytes(JSON.stringify(payload)));
     const root = currentState ? currentState.root : message.root;
-    channelState.root = root;
 
     if (settings.enableCloudLogs) {
       const attachMessage = `Attaching to Tangle, please wait... ${root}`;
@@ -52,13 +51,19 @@ const publish = async (payload, tag ='', currentState = null, streamId = null, g
 
     // Attach the message.    
     const api = composeAPI({ provider: node });
+
     const bundle = await mamAttach(api, message, depth, mwm, tag || defaultTag);
     const bundleHash = bundle && bundle.length && bundle[0].hash;
+    
     channelState.bundleHash = bundleHash;
+    channelState.root = root;
+    channelState.address = message.address;
+
+    const explorer = `https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
 
     if (settings.enableCloudLogs) {
       // Log success
-      const message = `You can view the Stream channel here https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
+      const message = `You can view the Stream channel here ${explorer}`;
       logs.push(message);
       console.log(message);
 
@@ -71,7 +76,7 @@ const publish = async (payload, tag ='', currentState = null, streamId = null, g
       await logMessage(logs, 'logs', streamId, groupId);
     }
 
-    return channelState;
+    return { metadata: channelState, explorer };
 
   } catch (attachError) {
     const attachErrorMessage = 'Streams attach message failed';
