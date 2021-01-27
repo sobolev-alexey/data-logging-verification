@@ -157,16 +157,62 @@ exports.read = async (req, res) => {
         }
 
         // Get user by ID from cloud database
+        const { uid, email, emailVerified } = res.locals;
+        console.log('READ 1: ', uid, email, emailVerified);
+        console.log('READ 2: ', streamId, groupId, type);
+
+        if (!uid) {
+            return res.status(400).send({ message: 'User ID not found' });
+        }
+        if (!email) {
+            return res.status(400).send({ message: 'User email not found' });
+        }
+        if (!emailVerified) {
+            return res.status(400).send({ message: `User email address ${email} not verified` });
+        }
+
+        const user = await getUser(uid);
+
+        // Verify group assignment
+        console.log('User groups', user.groups);
+        if (!user.groups.includes(params.groupId)) {
+            return res.status(400).send({ status: "error", error: 'No access to given group' });
+        }
 
         // Verify signature 
+        const signature = Buffer.from(JSON.parse(params.signature));
+        const callerSignatureVerificationResult = verifySignature(user.publicKey, params.payload, signature);
+        console.log('Read signature', callerSignatureVerificationResult);
+
+        if (!callerSignatureVerificationResult) {
+            return res.status(400).send({ status: "error", error: 'Wrong signature' });
+        }
 
         // Get existing stream by ID + group ID
+        const streamId = `${params.groupId}__${params.streamId}`;
+        const streamDetails = await getStreamDetails(streamId);
+
+        console.log('READ 3: ', JSON.stringify(streamDetails));
+
+        if (!streamDetails || isEmpty(streamDetails) || !streamDetails.metadata || isEmpty(streamDetails.metadata)) {
+            return res.status(400).send({ status: "error", error: 'No stream metadata found' });
+        }
 
         // MAM fetch payload
+        const messages = await fetch(
+            streamDetails.metadata, 
+            params.streamId, 
+            params.groupId
+        );
 
+        console.log('READ 4: ', JSON.stringify(messages));
+        
         // Prepare response
-
-        return res.json({ status: "success" });
+        return res.json({ 
+            status: "success",
+            messages,
+            metadata: streamDetails.metadata
+        });
     } catch (error) {
         console.error("Read stream failed. Params: ", params, error);
         return res.send({ status: "error", error: error.message, code: error.code });
