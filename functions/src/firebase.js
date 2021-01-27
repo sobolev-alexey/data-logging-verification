@@ -36,10 +36,15 @@ exports.getSettings = async () => {
   throw Error(message);
 };
 
-exports.register = async (uid, publicKey, user) => {
+exports.register = async (uid, publicKey, groupId, user) => {
   try {
     await admin.firestore().collection('users').doc(uid).set({
-      publicKey, uid, emailVerified: false, email: user.email
+      publicKey, 
+      uid, 
+      emailVerified: false, 
+      email: user.email, 
+      claimedGroupId: groupId,
+      groups: ['temp']
     });
   } catch(error) {
     console.error('Firebase register', error);

@@ -18,6 +18,7 @@ exports.log = async (req, res) => {
             !params.payload ||
             !params.signature ||
             !params.streamId ||
+            !params.groupId ||
             !params.type 
         ) {
             console.error("Log data failed. Params: ", params);
@@ -54,7 +55,7 @@ exports.read = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-        if (!params || !params.streamId || !params.signature) {
+            if (!params || !params.signature || !params.streamId || !params.groupId) {
             console.error("Read stream failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
@@ -84,6 +85,7 @@ exports.verify = async (req, res) => {
             !params.payload ||
             !params.signature ||
             !params.streamId ||
+            !params.groupId ||
             !params.publicKey 
         ) {
             console.error("Verify message failed. Params: ", params);
@@ -125,6 +127,7 @@ exports.trade_verify = async (req, res) => {
             !params.publicKeyProducer  ||
             !params.publicKeyConsumer  || 
             !params.publicKeyAgreedBid || 
+            !params.groupId || 
             !params.signature
         ) {
             console.error("Verify trade failed. Params: ", params);

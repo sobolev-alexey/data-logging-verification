@@ -56,7 +56,6 @@ exports.login = async (req, res) => {
                 // Check signature
                 const signature = Buffer.from(JSON.parse(params.signature));
                 const verificationResult = verifySignature(user.publicKey, { email: params.email }, signature);
-                console.log('Login signature', verificationResult);
 
                 if (!verificationResult) {
                     return res.status(400).send({ status: "error", error: 'Wrong signature' });
@@ -103,7 +102,7 @@ exports.register = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-        if (!params || !params.email || !params.publicKey) {
+        if (!params || !params.email || !params.publicKey || !params.groupId) {
             console.error("Register user failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are provided" });
         }
@@ -122,7 +121,7 @@ exports.register = async (req, res) => {
 
                 firebase.auth().sendSignInLinkToEmail(params.email, options)
                     .then(async () => {
-                        await register(userRecord.uid, params.publicKey, userRecord);
+                        await register(userRecord.uid, params.publicKey, params.groupId, userRecord);
                         console.log(`Registration email confirmation sent to ${params.email}`);
                     })
                     .catch(error => console.log("email error", error));
