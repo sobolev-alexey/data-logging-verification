@@ -3,24 +3,24 @@ const NodeRSA = require('node-rsa');
 const crypto = require('crypto');
 
 const generateKeys = () => {
-    try {
-        const keySize = 2048;
-        const rsaKeypair = new NodeRSA({ b: keySize });
-        if (rsaKeypair.getKeySize() === keySize && 
-            rsaKeypair.getMaxMessageSize() >= Math.round(keySize / 10) &&
-            rsaKeypair.isPrivate() &&
-            rsaKeypair.isPublic()
-        ) {
-            return { 
-                publicKey: rsaKeypair.exportKey('public'), 
-                privateKey: rsaKeypair.exportKey('private')
-            };
-        } else {
-            throw new Error('Key generation failed');
-        }
-    } catch (error) {
-        throw new Error(error);
+  try {
+    const keySize = 2048;
+    const rsaKeypair = new NodeRSA({ b: keySize });
+    if (rsaKeypair.getKeySize() === keySize && 
+      rsaKeypair.getMaxMessageSize() >= Math.round(keySize / 10) &&
+      rsaKeypair.isPrivate() &&
+      rsaKeypair.isPublic()
+    ) {
+      return { 
+        publicKey: rsaKeypair.exportKey('public'), 
+        privateKey: rsaKeypair.exportKey('private')
+      };
+    } else {
+      throw new Error('Key generation failed');
     }
+  } catch (error) {
+    throw new Error(error);
+  }
 }
 
 const verifyToken = async token => {
@@ -45,10 +45,10 @@ const verifyToken = async token => {
 const isJSON = data => {
   let hasKeys = false;
   for (let property in data) {
-      if (data.hasOwnProperty(property) && !(/^\d+$/.test(property))) {
-          hasKeys = true;
-          break;
-      }
+    if (data.hasOwnProperty(property) && !(/^\d+$/.test(property))) {
+      hasKeys = true;
+      break;
+    }
   }
 
   return (hasKeys && data.constructor === Object && data.constructor !== Array) ? true : false;
