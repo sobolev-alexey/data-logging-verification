@@ -58,9 +58,15 @@ const getHash = payload => {
   return crypto.createHash('sha256').update(payload).digest('hex');
 };
 
+const checkMessageTag = tag => {
+  const regex = /^[A-Za-z0-9]+$/;
+  return regex.test(tag) && tag.length <= 27;
+}
+
 module.exports = {
   generateKeys,
   verifyToken,
   isJSON,
   getHash,
+  checkMessageTag,
 };
