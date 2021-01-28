@@ -18,12 +18,17 @@ const callApi = async (url, payload) => {
 
 (async () => {
     try {
+        const groupId = 'test';
+        
         const keys = generateKeys();
+        keys.groupId = groupId;
+
         // Store keys
         fs.writeFileSync('./keys.json', JSON.stringify(keys, undefined, "\t"));
 
         const result = await callApi('register', {
           email: 'lexerr@gmail.com',
+          groupId,
           publicKey: keys.publicKey
         });
 
