@@ -69,20 +69,21 @@ exports.login = async (req, res) => {
                 firebase.auth().sendSignInLinkToEmail(params.email, options)
                     .then(async () => {
                         await completeLogin(userRecord.uid, false);
-                        console.log(`Login email confirmation sent to ${params.email}`);
+                        console.log(`Login email confirmation sent to ${params.email}`, (new Date()).toLocaleString().replace(/\//g, '.'));
                     })
                     .catch(error => console.log("email error", error));
 
+                await new Promise(resolved => setTimeout(resolved, 10000));
                 
                 let token;
                 let confirmed = false;
-                for await (const _ of Array.from(new Array(250), (x,i) => i)) {
+                for await (const iterator of Array.from(new Array(240), (x,i) => i)) {
                     if (!confirmed && userRecord) {
                         const userData = await getUser(userRecord.uid);
                         if (userData && userData.loginConfirmed) {
                             token = await admin.auth().createCustomToken(userData.uid);
                             confirmed = true;
-                            console.log(`Login with email address ${userData.email} successful. UID: ${userData.uid}`);
+                            console.log(`Login with email address ${userData.email} successful. UID: ${userRecord.uid}, ${iterator}`, (new Date()).toLocaleString().replace(/\//g, '.'));
                         }
                     }
                     await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 2000));
