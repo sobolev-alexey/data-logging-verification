@@ -18,11 +18,6 @@ const {
 
 exports.verifyToken = async (req, res) => {
     try {
-        // const settings = await getSettings();
-        // console.log(settings)
-        // console.log('====================')
-        // console.log(settings.keys.publicKey)
-        
         // Check Fields
         const params = req.body;
         if (!params || !params.token) {
@@ -30,8 +25,8 @@ exports.verifyToken = async (req, res) => {
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        await verifyToken(params.token);
-        return res.json({ status: "success" });
+        const result = await verifyToken(params.token);
+        return res.json({ status: "success", result });
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };
