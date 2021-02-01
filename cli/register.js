@@ -1,7 +1,19 @@
 const fs = require('fs');
 const axios = require('axios');
 const { generateKeys } = require('./encryption');
-const serverAPI = 'https://us-central1-data-logging-verification.cloudfunctions.net/api';
+
+const getConfig = () => {
+  try {
+      let config = {};
+      let storedConfig = fs.readFileSync('./config.json');
+      if (storedConfig) {
+        config = JSON.parse(storedConfig.toString());
+      }
+      return config;
+  } catch (error) {
+      throw new Error(error);
+  }
+}
 
 const callApi = async (url, payload) => {
   try {
@@ -9,7 +21,8 @@ const callApi = async (url, payload) => {
       "Content-Type": "application/json"
     };
 
-    const response = await axios.post(`${serverAPI}/${url}`, payload, { headers });
+    const config = getConfig();
+    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers });
     return response && response.data;
   } catch (error) {
     return { error };
@@ -18,30 +31,33 @@ const callApi = async (url, payload) => {
 
 (async () => {
     try {
-        const groupId = 'test';
-        
+        const config = getConfig();
         const keys = generateKeys();
-        keys.groupId = groupId;
+        keys.groupId = config && config.group;
 
         // Store keys
         fs.writeFileSync('./keys.json', JSON.stringify(keys, undefined, "\t"));
 
         const result = await callApi('register', {
-          email: 'lexerr@gmail.com',
-          groupId,
+          email: config && config.email,
+          groupId: config && config.group,
           publicKey: keys.publicKey
         });
 
-        if (result && result.servicePublicKey) {
-          keys.servicePublicKey = result.servicePublicKey;
-          // Store keys
-          fs.writeFileSync('./keys.json', JSON.stringify(keys, undefined, "\t"));
-        }
-        if (result && result.token) {
-          // Store token
-          fs.writeFileSync('./token.json', result.token);
+        if (result && result.status === 'success') {
+          if (result.servicePublicKey) {
+            keys.servicePublicKey = result.servicePublicKey;
+            // Store keys
+            fs.writeFileSync('./keys.json', JSON.stringify(keys, undefined, "\t"));
+          }
+          if (result.token) {
+            // Store token
+            fs.writeFileSync('./token.json', result.token);
+          }
+        } else {
+          result && result.error && console.log(result.status, result.error);
         }
     } catch (error) {
-      console.log(333, error)
+      console.log(error)
     }
 })();

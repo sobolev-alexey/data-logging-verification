@@ -1,20 +1,19 @@
 const fs = require('fs');
 const axios = require('axios');
-const { signMessage, verifySignature } = require('./encryption');
-const serverAPI = 'https://us-central1-data-logging-verification.cloudfunctions.net/api';
+const { signMessage } = require('./encryption');
 
-const callApi = async (url, payload) => {
+const getConfig = () => {
   try {
-    const headers = {
-      "Content-Type": "application/json"
-    };
-
-    const response = await axios.post(`${serverAPI}/${url}`, payload, { headers });
-    return response && response.data;
+      let config = {};
+      let storedConfig = fs.readFileSync('./config.json');
+      if (storedConfig) {
+        config = JSON.parse(storedConfig.toString());
+      }
+      return config;
   } catch (error) {
-    return { error };
+      throw new Error(error);
   }
-};
+}
 
 const getKeys = () => {
   try {
@@ -29,31 +28,42 @@ const getKeys = () => {
   }
 }
 
+const callApi = async (url, payload) => {
+  try {
+    const headers = {
+      "Content-Type": "application/json"
+    };
+
+    const config = getConfig();
+    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers });
+    return response && response.data;
+  } catch (error) {
+    return { error };
+  }
+};
+
 (async () => {
     try {
-        const email = 'lexerr@gmail.com';
+        const config = getConfig();
         
         // Get keys
         const keys = getKeys();
 
         // Sign message
-        const signature = signMessage(keys.privateKey,  { email });
-        // console.log('Signature', signature)
+        const signature = signMessage(keys.privateKey,  { email: config.email });
 
-        // const signatureString = JSON.stringify(signature);
-        // console.log(signatureString);
+        const result = await callApi('login', { email: config.email, signature: JSON.stringify(signature) });
 
-        // const valueFromString = Buffer.from(JSON.parse(signatureString));
+        if (result && result.status === 'success') {
+          if (result.token) {
+            // Update token
+            fs.writeFileSync('./token.json', result.token);
 
-        // console.log(typeof valueFromString, valueFromString instanceof Buffer, valueFromString);
-
-        // const verification = verifySignature(keys.publicKey, { email }, valueFromString);
-
-        // console.log('Verification', verification)
-
-        const result = await callApi('login', { email, signature: JSON.stringify(signature) });
-
-        console.log(result);
+            console.log(result);
+          }
+        } else {
+          result && result.error && console.log(result.status, result.error);
+        }
     } catch (error) {
       console.log(333, error)
     }
