@@ -3,6 +3,7 @@ const firebase = require('firebase');
 const isEmpty = require('lodash/isEmpty');
 const { isJSON, checkMessageTag, getHash } = require("../helpers");
 const { fetch, publish } = require("../streams");
+const { verifySignature } = require("../encryption");
 const {
     getUser,
     getStreamDetails,
@@ -68,9 +69,7 @@ exports.log = async (req, res) => {
 
         // Verify signature 
         const signature = Buffer.from(JSON.parse(params.signature));
-        const callerSignatureVerificationResult = verifySignature(user.publicKey, params.payload, signature);
-        console.log('Log signature', callerSignatureVerificationResult);
-
+        const callerSignatureVerificationResult = await verifySignature(user.publicKey, params.payload, signature);
         if (!callerSignatureVerificationResult) {
             return res.status(400).send({ status: "error", error: 'Wrong signature' });
         }
@@ -78,9 +77,7 @@ exports.log = async (req, res) => {
         // Get existing stream by ID + group ID
         const streamId = `${params.groupId}__${params.streamId}`;
         let streamDetails = await getStreamDetails(streamId);
-        let streamMetadata = null;
-
-        console.log('LOG 3: ', JSON.stringify(streamDetails));
+        let streamMetadata = {};
 
         // If no stream found, create new stream
         if (!streamDetails || isEmpty(streamDetails)) {
@@ -92,8 +89,6 @@ exports.log = async (req, res) => {
                 streamId: params.streamId,
                 writers: [uid]
             }
-
-            console.log('LOG 4: ', JSON.stringify(streamDetails));
         } else {
             streamMetadata = streamDetails && streamDetails.metadata;
         }
@@ -110,28 +105,23 @@ exports.log = async (req, res) => {
         if (!metadata || isEmpty(metadata)) {
             return res.status(400).send({ status: "error", error: 'Stream attach error' });
         }
-        streamMetadata.metadata = metadata;
+        streamDetails.metadata = metadata;
         
-        console.log('LOG 5: ', JSON.stringify(metadata));
-
         // Calculate and store payload hash, timestamp, message index
         const message = {
             createdBy: uid,
-            hash: getHash(params.payload),
+            hash: getHash(JSON.stringify(params.payload)),
             index: metadata && metadata.start,
             signature: params.signature,
             type: params.type
         };
 
-        console.log('LOG 6: ', JSON.stringify(message));
-
-        // Store stream metadata
-        const result = await storeStreamMessage(streamId, metadata, message);
+        // Store stream metadata & message
+        const result = await storeStreamMessage(streamId, streamDetails, message);
         if (typeof result !== 'boolean' || !result) {
             console.error('Store message failed', result);
             return res.status(400).send({ status: "error", error: 'Error while saving message' });
         }
-        console.log('LOG 7: ', result);
 
         // Prepare response
         return res.json({ 
@@ -142,7 +132,7 @@ exports.log = async (req, res) => {
             explorer
         });
     } catch (error) {
-        console.error("Log data failed. Params: ", params, error);
+        console.error("Log data failed. Params: ", req.body, error);
         return res.send({ status: "error", error: error.message, code: error.code });
     };
 };
