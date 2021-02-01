@@ -1,46 +1,6 @@
 const fs = require('fs');
-const axios = require('axios');
 const { signMessage } = require('./encryption');
-
-const getConfig = () => {
-  try {
-      let config = {};
-      let storedConfig = fs.readFileSync('./config.json');
-      if (storedConfig) {
-        config = JSON.parse(storedConfig.toString());
-      }
-      return config;
-  } catch (error) {
-      throw new Error(error);
-  }
-}
-
-const getKeys = () => {
-  try {
-      let keys = {};
-      let storedKeys = fs.readFileSync('./keys.json');
-      if (storedKeys) {
-          keys = JSON.parse(storedKeys.toString());
-      }
-      return keys;
-  } catch (error) {
-      throw new Error(error);
-  }
-}
-
-const callApi = async (url, payload) => {
-  try {
-    const headers = {
-      "Content-Type": "application/json"
-    };
-
-    const config = getConfig();
-    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers });
-    return response && response.data;
-  } catch (error) {
-    return { error };
-  }
-};
+const { getConfig, getKeys, callApi } = require('./utils');
 
 (async () => {
     try {
@@ -65,6 +25,6 @@ const callApi = async (url, payload) => {
           result && result.error && console.log(result.status, result.error);
         }
     } catch (error) {
-      console.log(333, error)
+      console.log(error)
     }
 })();

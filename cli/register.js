@@ -1,46 +1,19 @@
 const fs = require('fs');
-const axios = require('axios');
 const { generateKeys } = require('./encryption');
-
-const getConfig = () => {
-  try {
-      let config = {};
-      let storedConfig = fs.readFileSync('./config.json');
-      if (storedConfig) {
-        config = JSON.parse(storedConfig.toString());
-      }
-      return config;
-  } catch (error) {
-      throw new Error(error);
-  }
-}
-
-const callApi = async (url, payload) => {
-  try {
-    const headers = {
-      "Content-Type": "application/json"
-    };
-
-    const config = getConfig();
-    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers });
-    return response && response.data;
-  } catch (error) {
-    return { error };
-  }
-};
+const { getConfig, callApi } = require('./utils');
 
 (async () => {
     try {
         const config = getConfig();
         const keys = generateKeys();
-        keys.groupId = config && config.group;
+        keys.groupId = config && config.groupId;
 
         // Store keys
         fs.writeFileSync('./keys.json', JSON.stringify(keys, undefined, "\t"));
 
         const result = await callApi('register', {
           email: config && config.email,
-          groupId: config && config.group,
+          groupId: config && config.groupId,
           publicKey: keys.publicKey
         });
 
