@@ -194,7 +194,7 @@ exports.completeLogin = async (req, res) => {
             .then(async (userRecord) => {
                 await completeLogin(userRecord.uid, true);
 
-                console.log(`Successfully logged in user`, userRecord.uid, userRecord.email);
+                console.log(`Successfully logged in user`, userRecord.uid, userRecord.email, (new Date()).toLocaleString().replace(/\//g, '.'));
             })
             .catch((error) => {
                 console.log(`Error logging in user email ${params.uid}`, error);
