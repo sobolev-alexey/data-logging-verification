@@ -126,24 +126,25 @@ exports.storeStreamMessage = async (key, metadata, message) => {
       .set({ 
         lastModified: date,
         lastModifiedTimestamp: timestamp,
-        metadata
+        ...metadata
       }, { merge: true });
 
     // Store new message
     await admin
       .firestore()
-      .collection(`streams/${key}/messages`)
-      .doc(message && message.start)
+      .collection('streams')
+      .doc(key)
+      .collection('messages')
+      .doc(`${message.index}`)
       .set({
         created: date,
         createdTimestamp: timestamp,
-        metadata,
+        metadata: metadata.metadata,
         ...message
       });
 
     return true;
   } catch (error) {
-    console.error(error);
     return error;
   }
 };
