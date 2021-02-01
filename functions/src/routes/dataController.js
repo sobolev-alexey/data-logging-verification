@@ -204,7 +204,7 @@ exports.read = async (req, res) => {
             metadata: streamDetails.metadata
         });
     } catch (error) {
-        console.error("Read stream failed. Params: ", params, error);
+        console.error("Read stream failed. Params: ", req.body, error);
         return res.send({ status: "error", error: error.message, code: error.code });
     };
 };
@@ -289,7 +289,7 @@ exports.verify = async (req, res) => {
 
         return res.json({ status: "success" });
     } catch (error) {
-        console.error("Verify message failed. Params: ", params, error);
+        console.error("Verify message failed. Params: ", req.body, error);
         return res.send({ status: "error", error: error.message, code: error.code });
     };
 };
@@ -345,7 +345,7 @@ exports.trade_verify = async (req, res) => {
 
         return res.json({ status: "success" });
     } catch (error) {
-        console.error("Verify trade failed. Params: ", params, error);
+        console.error("Verify trade failed. Params: ", req.body, error);
         return res.send({ status: "error", error: error.message, code: error.code });
     };
 };
