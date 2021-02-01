@@ -17,7 +17,7 @@ const generateSeed = (length = 81) => {
   return seed;
 };
 
-const publish = async (payload, tag, currentState = null, streamId = null, groupId = null) => {
+const publish = async (payload, tag, currentState = {}, streamId = null, groupId = null) => {
   const logs = [];
 
   const settings = await getSettings();
@@ -32,7 +32,7 @@ const publish = async (payload, tag, currentState = null, streamId = null, group
     // Setup the details for the channel.
     const { depth, mwm, node, security, defaultTag, network } = settings.tangle;
     const sideKey = generateSeed();
-    let channelState = currentState;
+    let channelState = !isEmpty(currentState) ? currentState : null;
 
     // If we haven't received existing channel details then create a new channel.
     if (!channelState || isEmpty(channelState)) {
@@ -41,7 +41,7 @@ const publish = async (payload, tag, currentState = null, streamId = null, group
 
     // Create a Streams message using the channel state.
     const message = createMessage(channelState, asciiToTrytes(JSON.stringify(payload)));
-    const root = currentState ? currentState.root : message.root;
+    const root = !isEmpty(currentState) ? currentState.root : message.root;
 
     if (settings.enableCloudLogs) {
       const attachMessage = `Attaching to Tangle, please wait... ${root}`;
