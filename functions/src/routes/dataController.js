@@ -62,7 +62,6 @@ exports.log = async (req, res) => {
         }
 
         // Verify group assignment
-        console.log('User groups', user.groups);
         if (!user.groups.includes(params.groupId)) {
             return res.status(400).send({ status: "error", error: 'No access to given group' });
         }
@@ -164,16 +163,13 @@ exports.read = async (req, res) => {
         const user = await getUser(uid);
 
         // Verify group assignment
-        console.log('User groups', user.groups);
         if (!user.groups.includes(params.groupId)) {
             return res.status(400).send({ status: "error", error: 'No access to given group' });
         }
 
         // Verify signature 
         const signature = Buffer.from(JSON.parse(params.signature));
-        const callerSignatureVerificationResult = verifySignature(user.publicKey, params.payload, signature);
-        console.log('Read signature', callerSignatureVerificationResult);
-
+        const callerSignatureVerificationResult = verifySignature(user.publicKey, { email: user.email }, signature);
         if (!callerSignatureVerificationResult) {
             return res.status(400).send({ status: "error", error: 'Wrong signature' });
         }
@@ -181,8 +177,6 @@ exports.read = async (req, res) => {
         // Get existing stream by ID + group ID
         const streamId = `${params.groupId}__${params.streamId}`;
         const streamDetails = await getStreamDetails(streamId);
-
-        console.log('READ 3: ', JSON.stringify(streamDetails));
 
         if (!streamDetails || isEmpty(streamDetails) || !streamDetails.metadata || isEmpty(streamDetails.metadata)) {
             return res.status(400).send({ status: "error", error: 'No stream metadata found' });
@@ -195,8 +189,6 @@ exports.read = async (req, res) => {
             params.groupId
         );
 
-        console.log('READ 4: ', JSON.stringify(messages));
-        
         // Prepare response
         return res.json({ 
             status: "success",
@@ -242,7 +234,6 @@ exports.verify = async (req, res) => {
         const user = await getUser(uid);
 
         // Verify group assignment
-        console.log('User groups', user.groups);
         if (!user.groups.includes(params.groupId)) {
             return res.status(400).send({ status: "error", error: 'No access to given group' });
         }
