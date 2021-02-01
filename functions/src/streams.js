@@ -89,7 +89,7 @@ const fetch = async (channelState, streamId = null, groupId = null) => {
   const logs = [];
 
   const settings = await getSettings();
-  if (!settings || isEmpty(settings.tangle) || !settings.nodes.length) {
+  if (!settings || isEmpty(settings.tangle)) {
     const settingsErrorMessage = 'Settings not defined';
     settings.enableCloudLogs && logs.push(settingsErrorMessage);
 
