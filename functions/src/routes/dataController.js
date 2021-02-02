@@ -1,9 +1,6 @@
-const admin = require('firebase-admin');
-const firebase = require('firebase');
 const isEmpty = require('lodash/isEmpty');
 const { isJSON, checkMessageTag, getHash } = require("../helpers");
 const { fetch, publish } = require("../streams");
-const { verifySignature } = require("../encryption");
 const {
     getUser,
     getStreamDetails,
@@ -12,17 +9,12 @@ const {
     logMessage
 } = require("../firebase");
 
-
-// // Retrieve user
-// const user = await admin.auth().getUser(params.userId);
-
 exports.log = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
         if (!params || 
             !params.payload ||
-            !params.signature ||
             !params.streamId ||
             !params.groupId ||
             !params.type 
@@ -31,22 +23,7 @@ exports.log = async (req, res) => {
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        // Get user by ID from cloud database
-        const { uid, email, emailVerified } = res.locals;
-        console.log('LOG 1: ', uid, email, emailVerified);
-        console.log('LOG 2: ', streamId, groupId, type);
-
-        if (!uid) {
-            return res.status(400).send({ message: 'User ID not found' });
-        }
-        if (!email) {
-            return res.status(400).send({ message: 'User email not found' });
-        }
-        if (!emailVerified) {
-            return res.status(400).send({ message: `User email address ${email} not verified` });
-        }
-
-        const user = await getUser(uid);
+        const { uid } = res.locals;
 
         // Verify payload type
         if (isEmpty(params.payload) || !isJSON(params.payload)) {
@@ -59,18 +36,6 @@ exports.log = async (req, res) => {
             if (!isValidTag) {
                 return res.status(400).send({ status: "error", error: 'Wrong message tag' });
             }
-        }
-
-        // Verify group assignment
-        if (!user.groups.includes(params.groupId)) {
-            return res.status(400).send({ status: "error", error: 'No access to given group' });
-        }
-
-        // Verify signature 
-        const signature = Buffer.from(JSON.parse(params.signature));
-        const callerSignatureVerificationResult = await verifySignature(user.publicKey, params.payload, signature);
-        if (!callerSignatureVerificationResult) {
-            return res.status(400).send({ status: "error", error: 'Wrong signature' });
         }
 
         // Get existing stream by ID + group ID
@@ -140,38 +105,9 @@ exports.read = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-            if (!params || !params.signature || !params.streamId || !params.groupId) {
+            if (!params || !params.streamId || !params.groupId) {
             console.error("Read stream failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
-        }
-
-        // Get user by ID from cloud database
-        const { uid, email, emailVerified } = res.locals;
-        console.log('READ 1: ', uid, email, emailVerified);
-        console.log('READ 2: ', streamId, groupId, type);
-
-        if (!uid) {
-            return res.status(400).send({ message: 'User ID not found' });
-        }
-        if (!email) {
-            return res.status(400).send({ message: 'User email not found' });
-        }
-        if (!emailVerified) {
-            return res.status(400).send({ message: `User email address ${email} not verified` });
-        }
-
-        const user = await getUser(uid);
-
-        // Verify group assignment
-        if (!user.groups.includes(params.groupId)) {
-            return res.status(400).send({ status: "error", error: 'No access to given group' });
-        }
-
-        // Verify signature 
-        const signature = Buffer.from(JSON.parse(params.signature));
-        const callerSignatureVerificationResult = verifySignature(user.publicKey, { email: user.email }, signature);
-        if (!callerSignatureVerificationResult) {
-            return res.status(400).send({ status: "error", error: 'Wrong signature' });
         }
 
         // Get existing stream by ID + group ID
@@ -207,7 +143,6 @@ exports.verify = async (req, res) => {
         const params = req.body;
         if (!params || 
             !params.payload ||
-            !params.signature ||
             !params.streamId ||
             !params.groupId ||
             !params.publicKey 
@@ -216,40 +151,9 @@ exports.verify = async (req, res) => {
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        // Get user by ID from cloud database
-        const { uid, email, emailVerified } = res.locals;
-        console.log('VERIFY 1: ', uid, email, emailVerified);
-        console.log('VERIFY 2: ', streamId, groupId, type);
-
-        if (!uid) {
-            return res.status(400).send({ message: 'User ID not found' });
-        }
-        if (!email) {
-            return res.status(400).send({ message: 'User email not found' });
-        }
-        if (!emailVerified) {
-            return res.status(400).send({ message: `User email address ${email} not verified` });
-        }
-
-        const user = await getUser(uid);
-
-        // Verify group assignment
-        if (!user.groups.includes(params.groupId)) {
-            return res.status(400).send({ status: "error", error: 'No access to given group' });
-        }
-
         // Verify payload type
         if (isEmpty(params.payload) || !isJSON(params.payload)) {
             return res.status(400).send({ status: "error", error: 'Wrong payload format' });
-        }
-
-        // Verify signature 
-        const signature = Buffer.from(JSON.parse(params.signature));
-        const callerSignatureVerificationResult = verifySignature(user.publicKey, params.payload, signature);
-        console.log('Read signature', callerSignatureVerificationResult);
-
-        if (!callerSignatureVerificationResult) {
-            return res.status(400).send({ status: "error", error: 'Wrong signature' });
         }
 
         // Get existing stream by ID + group ID
@@ -295,9 +199,7 @@ exports.trade_verify = async (req, res) => {
             !params.streamIdAgreedBid  ||
             !params.publicKeyProducer  ||
             !params.publicKeyConsumer  || 
-            !params.publicKeyAgreedBid || 
-            !params.groupId || 
-            !params.signature
+            !params.publicKeyAgreedBid
         ) {
             console.error("Verify trade failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
