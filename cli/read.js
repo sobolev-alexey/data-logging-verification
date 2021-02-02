@@ -25,11 +25,6 @@ const { getConfig, getKeys, callApi } = require('./utils');
         if (result && !result.error && result.status === 'success') {
           if (result.metadata) {
             console.log(result);
-
-            // const { address, explorer, messageIndex, root } = result;
-            // const metadata = { address, explorer, messageIndex, root };
-            // Store stream metadata
-            // fs.writeFileSync(`./${streamId}.json`, JSON.stringify(metadata, undefined, "\t"));
           }
         } else {
           result && result.error && console.log(result.status, result.error);
