@@ -19,7 +19,7 @@ const getToken = () => {
       let token = {};
       let storedToken = fs.readFileSync('./token.json');
       if (storedToken) {
-          token = JSON.parse(storedToken.toString());
+          token = storedToken.toString();
       }
       return token;
   } catch (error) {
@@ -42,20 +42,30 @@ const getKeys = () => {
 
 const callApi = async (url, payload, auth = false) => {
   try {
-    const token = getToken();
     const headers = {
       "Content-Type": "application/json"
     };
 
     if (auth) {
-      headers.Authorization = `Bearer ${token}`;
+      headers.Authorization = `Bearer ${getToken()}`;
     }
 
     const config = getConfig();
-    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers });
+
+    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers })
     return response && response.data;
   } catch (error) {
-    return { error };
+    // error.message
+    // error.response.status
+    // error.response.statusText
+    // error.response.data.message
+    if (!error.response || !error.response.data || !error.response.data.message) {
+      console.error(error);
+    }
+    return { 
+      error: error.response.data.message,
+      status: error.response.status
+    };
   }
 };
 
