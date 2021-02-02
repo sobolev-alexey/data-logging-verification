@@ -1,17 +1,22 @@
-exports.isAuthorized = opts => {
-   return (req, res, next) => {
-       const { role, uid } = res.locals;
-       const { id } = req.params;
+const { getUser } = require("../firebase");
 
-       if (opts.allowSameUser && id && uid === id)
-           return next();
+exports.isAuthorized = async (req, res, next) => {
+    try {
+        const { uid } = res.locals;
+        const { groupId } = req.body;
 
-       if (!role)
-           return res.status(403).send();
 
-       if (opts.hasRole.includes(role))
-           return next();
+        const user = await getUser(uid);
 
-       return res.status(403).send();
-   }
+
+        // Verify group assignment
+        if (!user.groups.includes(groupId)) {
+            return res.status(403).send({ status: "error", error: 'No access to given group' });
+        }
+
+        return next();
+    } catch (err) {
+        console.error(`${err.code} -  ${err.message}`);
+        return res.status(401).send({ message: 'Unauthorized' });
+    }
 }
