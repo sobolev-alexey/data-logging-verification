@@ -1,7 +1,6 @@
 const cors = require('cors');
 const { 
     verifyToken, 
-    // getUser,
     login,
     completeLogin,
     register,
