@@ -139,7 +139,7 @@ exports.verify = async (req, res) => {
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        const response = { status: "success", verified: true };
+        const response = { status: "success", verified: true, status: 200 };
 
         // Verify payload type
         if (isEmpty(params.payload) || !isJSON(params.payload)) {
@@ -151,7 +151,8 @@ exports.verify = async (req, res) => {
         if (result.status !== 'success') {
             response.status = 'error';
             response.verified = false;
-            response.errorMessage = result.error;
+            response.error = result.error;
+            response.status = 400;
         }
 
         const fetchedMessages = result.messages;
@@ -163,7 +164,8 @@ exports.verify = async (req, res) => {
         if (isEmpty(fetchedMessage) || !isJSON(fetchedMessage)) {
             response.status = 'error';
             response.verified = false;
-            response.errorMessage = 'Message not fetched';
+            response.error = 'Message not fetched';
+            response.status = 400;
         }
 
         // Get existing stream by ID + group ID
@@ -174,7 +176,8 @@ exports.verify = async (req, res) => {
         if (isEmpty(storedMessage) || !isJSON(storedMessage)) {
             response.status = 'error';
             response.verified = false;
-            response.errorMessage = 'Message not found';
+            response.error = 'Message not found';
+            response.status = 404;
         }
 
         // Verify payload integrity, compare fetched message hash with stored hash
@@ -184,7 +187,8 @@ exports.verify = async (req, res) => {
             response.status = 'error';
             response.verified = false;
             response.malicious = true;
-            response.errorMessage = 'Integrity error';
+            response.error = 'Integrity error';
+            response.status = 400;
         }
 
         // Verify signature of fetched message with the provided public key, flag malicious
@@ -195,7 +199,8 @@ exports.verify = async (req, res) => {
             response.status = 'error';
             response.verified = false;
             response.malicious = true;
-            response.errorMessage = 'Wrong signature';
+            response.error = 'Wrong signature';
+            response.status = 400;
         }
 
         // Prepare response
