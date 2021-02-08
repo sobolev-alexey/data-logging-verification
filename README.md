@@ -32,7 +32,7 @@ To test this locally, run
 `firebase functions:shell`
 
 Then call a function with parameters
-`user.post('/user').form({ userId: "" })`
+`user.post('/verify-token').form({ token: "" })`
 
 #### Deploy fo Firebase
 
