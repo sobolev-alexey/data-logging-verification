@@ -18,11 +18,6 @@ const {
 
 exports.verifyToken = async (req, res) => {
     try {
-        // const settings = await getSettings();
-        // console.log(settings)
-        // console.log('====================')
-        // console.log(settings.keys.publicKey)
-        
         // Check Fields
         const params = req.body;
         if (!params || !params.token) {
@@ -30,8 +25,8 @@ exports.verifyToken = async (req, res) => {
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        await verifyToken(params.token);
-        return res.json({ status: "success" });
+        const result = await verifyToken(params.token);
+        return res.json({ status: "success", result });
     } catch (error) {
         return res.send({ status: "error", error: error.message, code: error.code });
     };
@@ -56,7 +51,6 @@ exports.login = async (req, res) => {
                 // Check signature
                 const signature = Buffer.from(JSON.parse(params.signature));
                 const verificationResult = verifySignature(user.publicKey, { email: params.email }, signature);
-                console.log('Login signature', verificationResult);
 
                 if (!verificationResult) {
                     return res.status(400).send({ status: "error", error: 'Wrong signature' });
@@ -70,20 +64,21 @@ exports.login = async (req, res) => {
                 firebase.auth().sendSignInLinkToEmail(params.email, options)
                     .then(async () => {
                         await completeLogin(userRecord.uid, false);
-                        console.log(`Login email confirmation sent to ${params.email}`);
+                        console.log(`Login email confirmation sent to ${params.email}`, (new Date()).toLocaleString().replace(/\//g, '.'));
                     })
                     .catch(error => console.log("email error", error));
 
+                await new Promise(resolved => setTimeout(resolved, 10000));
                 
                 let token;
                 let confirmed = false;
-                for await (const _ of Array.from(new Array(250), (x,i) => i)) {
+                for await (const iterator of Array.from(new Array(240), (x,i) => i)) {
                     if (!confirmed && userRecord) {
                         const userData = await getUser(userRecord.uid);
                         if (userData && userData.loginConfirmed) {
                             token = await admin.auth().createCustomToken(userData.uid);
                             confirmed = true;
-                            console.log(`Login with email address ${userData.email} successful. UID: ${userData.uid}`);
+                            console.log(`Login with email address ${userData.email} successful. UID: ${userRecord.uid}, ${iterator}`, (new Date()).toLocaleString().replace(/\//g, '.'));
                         }
                     }
                     await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 2000));
@@ -103,7 +98,7 @@ exports.register = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-        if (!params || !params.email || !params.publicKey) {
+        if (!params || !params.email || !params.publicKey || !params.groupId) {
             console.error("Register user failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are provided" });
         }
@@ -122,7 +117,7 @@ exports.register = async (req, res) => {
 
                 firebase.auth().sendSignInLinkToEmail(params.email, options)
                     .then(async () => {
-                        await register(userRecord.uid, params.publicKey, userRecord);
+                        await register(userRecord.uid, params.publicKey, params.groupId, userRecord);
                         console.log(`Registration email confirmation sent to ${params.email}`);
                     })
                     .catch(error => console.log("email error", error));
@@ -199,7 +194,7 @@ exports.completeLogin = async (req, res) => {
             .then(async (userRecord) => {
                 await completeLogin(userRecord.uid, true);
 
-                console.log(`Successfully logged in user`, userRecord.uid, userRecord.email);
+                console.log(`Successfully logged in user`, userRecord.uid, userRecord.email, (new Date()).toLocaleString().replace(/\//g, '.'));
             })
             .catch((error) => {
                 console.log(`Error logging in user email ${params.uid}`, error);

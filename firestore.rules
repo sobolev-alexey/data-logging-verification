@@ -3,7 +3,13 @@ service cloud.firestore {
     match /users {
    		allow read, write: if false;
   	}
-  	match /logs {
+    match /logs {
+   		allow read, write: if false;
+  	}
+    match /malicious {
+   		allow read, write: if false;
+  	}
+  	match /streams {
    		allow read, write: if false;
   	}
     match /settings {

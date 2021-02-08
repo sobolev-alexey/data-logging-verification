@@ -1,7 +1,6 @@
 const cors = require('cors');
 const { 
     verifyToken, 
-    // getUser,
     login,
     completeLogin,
     register,
@@ -37,15 +36,12 @@ const corsOptions = {
 exports.routesConfig = app => {
     app.post('/verify', cors(corsOptions), verifyToken);
     app.post('/login', cors(corsOptions), login);
+    app.post('/register', cors(corsOptions), register);
+    app.get('/register-complete', cors(corsOptions), completeRegistration);
+    app.get('/login-complete', cors(corsOptions), completeLogin);
 
     app.post('/log', cors(corsOptions), isAuthenticated, isAuthorized, log);
     app.post('/read', cors(corsOptions), isAuthenticated, isAuthorized, read);
     app.post('/verify', cors(corsOptions), isAuthenticated, isAuthorized, verify);
     app.post('/trade_verify', cors(corsOptions), isAuthenticated, isAuthorized, trade_verify);
-
-    app.post('/register', register);
-    app.get('/register-complete', completeRegistration);
-    app.get('/login-complete', completeLogin);
-    // app.get('/test', createTestToken);
-    // app.post('/test', createTestToken);
 }

@@ -19,17 +19,30 @@ exports.isAuthenticated = async (req, res, next) => {
         firebase.auth().signInWithCustomToken(token)
             .then((userCredential) => {
                 const user = userCredential.user;
+                const { uid, email, emailVerified } = user;
+
+                if (!uid) {
+                    return res.status(400).send({ message: 'User ID not found' });
+                }
+                if (!email) {
+                    return res.status(400).send({ message: 'User email not found' });
+                }
+                if (!emailVerified) {
+                    return res.status(400).send({ message: `User email address ${email} not verified` });
+                }
+
                 res.locals = { 
                     ...res.locals, 
-                    uid: user.uid,
-                    email: user.email,
-                    emailVerified: user.emailVerified
+                    uid,
+                    email,
+                    emailVerified
                 };
+
                 return next();
             })
             .catch((error) => {
                 console.error('verifyToken', error.code, error.message);
-                return res.status(401).send({ message: 'Unauthorized' });
+                return res.status(401).send({ message: 'Please log in' });
             });
     }
     catch (err) {

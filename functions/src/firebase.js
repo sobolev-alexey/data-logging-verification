@@ -1,6 +1,4 @@
-require('./firebaseInit');
 const admin = require('firebase-admin');
-const firebase = require('firebase');
 
 exports.getUser = async (userId) => {
   // Get user
@@ -38,10 +36,15 @@ exports.getSettings = async () => {
   throw Error(message);
 };
 
-exports.register = async (uid, publicKey, user) => {
+exports.register = async (uid, publicKey, groupId, user) => {
   try {
     await admin.firestore().collection('users').doc(uid).set({
-      publicKey, uid, emailVerified: false, email: user.email
+      publicKey, 
+      uid, 
+      emailVerified: false, 
+      email: user.email, 
+      claimedGroupId: groupId,
+      groups: ['temp']
     });
   } catch(error) {
     console.error('Firebase register', error);
@@ -71,5 +74,78 @@ exports.completeLogin = async (uid, flag) => {
   }
 }
 
+exports.logMessage = async (messages, type, streamId = null, groupId = null) => {
+  if (!streamId || !groupId) return;
+  if (type !== 'logs' || type !== 'malicious') return;
 
+  const timestamp = `${(new Date()).toLocaleString().replace(/\//g, '.')}`;
+  // Save logs by group and stream
+  await admin
+    .firestore()
+    .collection(`${type}/${groupId}/streams/${streamId}/messages`)
+    .doc(timestamp)
+    .set({ 
+      ...messages.map(message => message),
+      streamId,
+      groupId,
+      timestamp
+    }, { merge: true });
+};
 
+exports.getStreamDetails = async key => {
+  // Get stream details by groupId + streamId
+  const doc = await admin
+    .firestore()
+    .collection('streams')
+    .doc(key)
+    .get();
+  return doc.exists ? doc.data() : null;
+};
+
+exports.getStreamMessages = async key => {
+  // Get stream messages by groupId + streamId
+  const messagesSnapshot = await admin
+    .firestore()
+    .collection(`streams/${key}/messages`)
+    .get();
+
+  return messagesSnapshot.docs.map(document => 
+    document.exists ? document.data() : null
+  );
+};
+
+exports.storeStreamMessage = async (key, metadata, message) => {
+  const date = (new Date()).toLocaleString().replace(/\//g, '.');
+  const timestamp = Date.now();
+
+  try {
+    // Update metadata
+    await admin
+      .firestore()
+      .collection('streams')
+      .doc(key)
+      .set({ 
+        lastModified: date,
+        lastModifiedTimestamp: timestamp,
+        ...metadata
+      }, { merge: true });
+
+    // Store new message
+    await admin
+      .firestore()
+      .collection('streams')
+      .doc(key)
+      .collection('messages')
+      .doc(`${message.index}`)
+      .set({
+        created: date,
+        createdTimestamp: timestamp,
+        metadata: metadata.metadata,
+        ...message
+      });
+
+    return true;
+  } catch (error) {
+    return error;
+  }
+};

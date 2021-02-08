@@ -3,6 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require("cors");
 const { routesConfig } = require('./routes/routes');
+require('./firebaseInit');
 
 const app = express();
 app.use(bodyParser.json());
