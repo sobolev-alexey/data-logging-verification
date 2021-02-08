@@ -34,7 +34,7 @@ const corsOptions = {
 };
 
 exports.routesConfig = app => {
-    app.post('/verify', cors(corsOptions), verifyToken);
+    app.post('/verify-token', cors(corsOptions), verifyToken);
     app.post('/login', cors(corsOptions), login);
     app.post('/register', cors(corsOptions), register);
     app.get('/register-complete', cors(corsOptions), completeRegistration);
