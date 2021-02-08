@@ -1,6 +1,9 @@
 const firebase = require('firebase');
 const NodeRSA = require('node-rsa');
 const crypto = require('crypto');
+const isEmpty = require('lodash/isEmpty');
+const { fetch } = require("./streams");
+const { getStreamDetails } = require("./firebase");
 
 const generateKeys = () => {
   try {
@@ -58,9 +61,31 @@ const getHash = payload => {
   return crypto.createHash('sha256').update(payload).digest('hex');
 };
 
+const getExplorerURL = (root, sideKey, network) => {
+  return `https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
+};
+
 const checkMessageTag = tag => {
   const regex = /^[A-Za-z0-9]+$/;
   return regex.test(tag) && tag.length <= 27;
+}
+
+const fetchStream = async (groupId, streamId) => {
+  try {
+    // Get existing stream by ID + group ID
+    const streamDetails = await getStreamDetails(`${groupId}__${streamId}`);
+
+    if (!streamDetails || isEmpty(streamDetails) || !streamDetails.metadata || isEmpty(streamDetails.metadata)) {
+      return { status: "error", error: 'No stream metadata found', code: 404 };
+    }
+
+    // MAM fetch payload
+    const messages = await fetch(streamDetails.metadata, streamId, groupId);
+
+    return { status: "success", messages, metadata: streamDetails.metadata };
+  } catch (error) {
+    return { status: "error", error: error.message, code: error.code };
+  };
 }
 
 module.exports = {
@@ -68,5 +93,7 @@ module.exports = {
   verifyToken,
   isJSON,
   getHash,
+  getExplorerURL,
   checkMessageTag,
+  fetchStream
 };

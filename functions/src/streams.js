@@ -4,6 +4,7 @@ const { composeAPI } = require('@iota/core');
 const { asciiToTrytes, trytesToAscii } = require('@iota/converter')
 const { createChannel, createMessage, mamAttach, mamFetchAll } = require('@iota/mam.js');
 const { getSettings, logMessage } = require('./firebase');
+const { getExplorerURL } = require('./helpers');
 
 const generateSeed = (length = 81) => {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ9';
@@ -59,7 +60,7 @@ const publish = async (payload, tag, currentState = {}, streamId = null, groupId
     channelState.root = root;
     channelState.address = message.address;
 
-    const explorer = `https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
+    const explorer = getExplorerURL(root, sideKey, network);
 
     if (settings.enableCloudLogs) {
       // Log success

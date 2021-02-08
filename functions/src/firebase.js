@@ -76,14 +76,14 @@ exports.completeLogin = async (uid, flag) => {
 
 exports.logMessage = async (messages, type, streamId = null, groupId = null) => {
   if (!streamId || !groupId) return;
-  if (type !== 'logs' || type !== 'malicious') return;
-
+  if (type !== 'logs' && type !== 'malicious') return;
   const timestamp = `${(new Date()).toLocaleString().replace(/\//g, '.')}`;
+
   // Save logs by group and stream
   await admin
     .firestore()
-    .collection(`${type}/${groupId}/streams/${streamId}/messages`)
-    .doc(timestamp)
+    .collection(type)
+    .doc(`${groupId}__${streamId}`)
     .set({ 
       ...messages.map(message => message),
       streamId,
