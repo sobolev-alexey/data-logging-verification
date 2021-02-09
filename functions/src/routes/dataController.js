@@ -1,4 +1,6 @@
 const isEmpty = require('lodash/isEmpty');
+const last = require('lodash/last');
+const get = require('lodash/get');
 const { isJSON, checkMessageTag, getHash, getExplorerURL, fetchStream } = require("../helpers");
 const { publish } = require("../streams");
 const { verifySignature } = require("../encryption");
@@ -282,10 +284,10 @@ exports.trade_verify = async (req, res) => {
         if (streamAgreedBid.status !== 'success') {
             response.status = 'error';
             response.verified = false;
-            response.error = streamAgreedBid.error;
+            response.error = get(streamAgreedBid, 'error');
             response.statusCode = 400;
         }
-        const fetchedAgreedBidMessages = streamAgreedBid.messages;
+        const fetchedAgreedBidMessages = get(streamAgreedBid, 'messages');
 
         // Verify signature of fetched producer message with the provided producer public key, flag malicious
         fetchedProducerMessages.forEach((messageObj, index) => {
@@ -329,8 +331,8 @@ exports.trade_verify = async (req, res) => {
         
         // Verify signature of fetched bid message with the provided bid public key, flag malicious
         fetchedAgreedBidMessages.forEach((messageObj, index) => {
-            const signature = Buffer.from(JSON.parse(messageObj.signature));
-            const signatureVerificationResult = await verifySignature(params.publicKeyAgreedBid, messageObj.message, signature);
+            const signature = Buffer.from(JSON.parse(get(messageObj, 'signature')));
+            const signatureVerificationResult = await verifySignature(params.publicKeyAgreedBid, get(messageObj, 'message'), signature);
             if (!signatureVerificationResult) {
                 response.status = 'error';
                 response.verified = false;
@@ -409,7 +411,7 @@ exports.trade_verify = async (req, res) => {
 
         // Verify bid payload integrity, compare fetched message hash with stored hash
         const storedAgreedBidMessages = await getStreamMessages(`${params.groupId}__${params.streamIdAgreedBid}`);
-        storedAgreedBidMessages.sort((a, b) => a.index - b.index).forEach((storedMessage, index) => {
+        storedAgreedBidMessages.sort((a, b) => get(a, 'index') - get(b, 'index')).forEach((storedMessage, index) => {
             const fetchedMessage = fetchedAgreedBidMessages[index];
             
             if (isEmpty(storedMessage) || !isJSON(storedMessage) || isEmpty(fetchedMessage) || !isJSON(fetchedMessage)) {
@@ -419,18 +421,18 @@ exports.trade_verify = async (req, res) => {
                 response.statusCode = 404;
             }
 
-            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
-            if (fetchedPayloadHash !== storedMessage.hash) {
+            const fetchedPayloadHash = getHash(JSON.stringify(get(fetchedMessage, 'message')));
+            if (fetchedPayloadHash !== get(storedMessage, 'hash')) {
                 response.status = 'error';
                 response.verified = false;
                 response.malicious = true;
                 response.error = 'Integrity error';
                 response.statusCode = 400;
                 const logs = [
-                    `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                    `Fetched: ${JSON.stringify(get(fetchedMessage, 'message'))}`,
                     `Stored: ${JSON.stringify(storedMessage)}`,
                     `Fetched Payload Hash: ${fetchedPayloadHash}`,
-                    `Stored Payload Hash: ${storedMessage.hash}`,
+                    `Stored Payload Hash: ${get(storedMessage, 'hash')}`,
                     'Error: Integrity error'
                 ]
                 await logMessage(logs, 'malicious', params.streamId, params.groupId);
