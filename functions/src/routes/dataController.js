@@ -439,11 +439,26 @@ exports.trade_verify = async (req, res) => {
             }
         });
 
-
         // Calculate produced energy
+        response.energyProduced = 0;
+        fetchedProducerMessages.forEach(messageObj => {
+            response.energyProduced += Number(get(messageObj, 'message.Quantity.Value'));
+        });
+
         // Calculate consumed energy
+        response.energyConsumed = 0;
+        fetchedConsumerMessages.forEach(messageObj => {
+            response.energyConsumed += Number(get(messageObj, 'message.Quantity.Value'));
+        });
 
         // Verify energy amount match between producer, consumer, bid
+        response.energyAgreedBid = get(last(fetchedAgreedBidMessages), 'message.Quantity.Value');
+        if (response.energyAgreedBid !== response.energyProduced || response.energyAgreedBid !== response.energyConsumed) {
+            response.status = 'error';
+            response.verified = false;
+            response.error = 'Amount mismatch error';
+            response.statusCode = 400;
+        }
         
         // Optionally verify starting time
         
