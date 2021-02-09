@@ -182,25 +182,41 @@ exports.verify = async (req, res) => {
 
         // Verify payload integrity, compare fetched message hash with stored hash
         const payloadHash = getHash(JSON.stringify(params.payload));
-        if (payloadHash !== storedMessage.hash) {
-            // ToDo: Log malicious
+        const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
+        if (payloadHash !== storedMessage.hash || fetchedPayloadHash !== storedMessage.hash) {
             response.status = 'error';
             response.verified = false;
             response.malicious = true;
             response.error = 'Integrity error';
             response.statusCode = 400;
+            const logs = [
+                `Payload: ${JSON.stringify(params.payload)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage)}`,
+                `Stored: ${JSON.stringify(storedMessage)}`,
+                `Payload Hash: ${payloadHash}`,
+                `Fetched Payload Hash: ${fetchedPayloadHash}`,
+                `Stored Payload Hash: ${storedMessage.hash}`,
+                'Error: Integrity error'
+            ]
+            await logMessage(logs, 'malicious', params.streamId, params.groupId);
         }
 
         // Verify signature of fetched message with the provided public key, flag malicious
         const signature = Buffer.from(JSON.parse(storedMessage.signature));
         const signatureVerificationResult = await verifySignature(params.publicKey, fetchedMessage, signature);
         if (!signatureVerificationResult) {
-            // ToDo: Log malicious
             response.status = 'error';
             response.verified = false;
             response.malicious = true;
             response.error = 'Wrong signature';
             response.statusCode = 400;
+            const logs = [
+                `Payload: ${JSON.stringify(params.payload)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage)}`,
+                'Error: Wrong signature'
+            ]
+            await logMessage(logs, 'malicious', params.streamId, params.groupId);
+
         }
 
         // Prepare response
