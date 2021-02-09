@@ -463,8 +463,22 @@ exports.trade_verify = async (req, res) => {
         // Optionally verify starting time
         
         // Prepare response
+        if (params.returnPayload) {
+            response.fetchedPayload = {
+                producer: fetchedProducerMessages,
+                consumer: fetchedConsumerMessages,
+                bid: fetchedAgreedBidMessages
+            };
+        }
+        if (params.returnMetadata) {
+            response.metadata = {
+                producer: storedProducerMessages.map(message => get(message, 'metadata')),
+                consumer: storedConsumerMessages.map(message => get(message, 'metadata')),
+                bid: storedAgreedBidMessages.map(message => get(message, 'metadata'))
+            };
+        }
 
-        return res.json({ status: "success" });
+        return res.json(response);
     } catch (error) {
         console.error("Verify trade failed. Params: ", req.body, error);
         return res.send({ status: "error", error: error.message, code: error.code });
