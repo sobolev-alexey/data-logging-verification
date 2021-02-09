@@ -65,11 +65,12 @@ exports.completeRegistration = async uid => {
 
 exports.completeLogin = async (uid, flag) => {
   try {
+    console.log('Firebase completeLogin', uid, flag);
     await admin.firestore().collection('users').doc(uid).set({
       loginConfirmed: flag
     }, { merge: true });
   } catch(error) {
-      console.error('Firebase completeRegistration', error);
+      console.error('Firebase completeLogin', error);
       throw error;
   }
 }
