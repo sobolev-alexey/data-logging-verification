@@ -60,7 +60,7 @@ exports.log = async (req, res) => {
 
         // MAM attach payload
         const { metadata, explorer } = await publish(
-            params.payload, 
+            { message: params.payload, signature: params.signature },
             params.tag || null, 
             streamMetadata, 
             params.streamId, 
@@ -182,7 +182,7 @@ exports.verify = async (req, res) => {
 
         // Verify payload integrity, compare fetched message hash with stored hash
         const payloadHash = getHash(JSON.stringify(params.payload));
-        const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
+        const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
         if (payloadHash !== storedMessage.hash || fetchedPayloadHash !== storedMessage.hash) {
             response.status = 'error';
             response.verified = false;
@@ -191,7 +191,7 @@ exports.verify = async (req, res) => {
             response.statusCode = 400;
             const logs = [
                 `Payload: ${JSON.stringify(params.payload)}`,
-                `Fetched: ${JSON.stringify(fetchedMessage)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
                 `Stored: ${JSON.stringify(storedMessage)}`,
                 `Payload Hash: ${payloadHash}`,
                 `Fetched Payload Hash: ${fetchedPayloadHash}`,
@@ -202,8 +202,8 @@ exports.verify = async (req, res) => {
         }
 
         // Verify signature of fetched message with the provided public key, flag malicious
-        const signature = Buffer.from(JSON.parse(storedMessage.signature));
-        const signatureVerificationResult = await verifySignature(params.publicKey, fetchedMessage, signature);
+        const signature = Buffer.from(JSON.parse(fetchedMessage.signature));
+        const signatureVerificationResult = await verifySignature(params.publicKey, fetchedMessage.message, signature);
         if (!signatureVerificationResult) {
             response.status = 'error';
             response.verified = false;
@@ -212,7 +212,8 @@ exports.verify = async (req, res) => {
             response.statusCode = 400;
             const logs = [
                 `Payload: ${JSON.stringify(params.payload)}`,
-                `Fetched: ${JSON.stringify(fetchedMessage)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                `Fetched Signature: ${JSON.stringify(fetchedMessage.signature)}`,
                 'Error: Wrong signature'
             ]
             await logMessage(logs, 'malicious', params.streamId, params.groupId);
@@ -225,7 +226,7 @@ exports.verify = async (req, res) => {
         response.explorer = getExplorerURL(root, sideKey, settings.tangle.network);
         
         if (params.returnPayload) {
-            response.fetchedPayload = fetchedMessage;
+            response.fetchedPayload = fetchedMessage.message;
         }
         if (params.returnMetadata) {
             response.metadata = storedMessage.metadata;
