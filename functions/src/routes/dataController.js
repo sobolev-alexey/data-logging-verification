@@ -292,7 +292,7 @@ exports.trade_verify = async (req, res) => {
         // Verify signature of fetched producer message with the provided producer public key, flag malicious
         fetchedProducerMessages.forEach((messageObj, index) => {
             const signature = Buffer.from(JSON.parse(messageObj.signature));
-            const signatureVerificationResult = await verifySignature(params.publicKeyProducer, messageObj.message, signature);
+            const signatureVerificationResult = verifySignature(params.publicKeyProducer, messageObj.message, signature);
             if (!signatureVerificationResult) {
                 response.status = 'error';
                 response.verified = false;
@@ -305,14 +305,14 @@ exports.trade_verify = async (req, res) => {
                     `Message index: ${index}`,
                     'Error: Wrong signature'
                 ]
-                await logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
             }
         });
 
         // Verify signature of fetched consumer message with the provided consumer public key, flag malicious
         fetchedConsumerMessages.forEach((messageObj, index) => {
             const signature = Buffer.from(JSON.parse(messageObj.signature));
-            const signatureVerificationResult = await verifySignature(params.publicKeyConsumer, messageObj.message, signature);
+            const signatureVerificationResult = verifySignature(params.publicKeyConsumer, messageObj.message, signature);
             if (!signatureVerificationResult) {
                 response.status = 'error';
                 response.verified = false;
@@ -325,14 +325,14 @@ exports.trade_verify = async (req, res) => {
                     `Message index: ${index}`,
                     'Error: Wrong signature'
                 ]
-                await logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
             }
         });
         
         // Verify signature of fetched bid message with the provided bid public key, flag malicious
         fetchedAgreedBidMessages.forEach((messageObj, index) => {
             const signature = Buffer.from(JSON.parse(get(messageObj, 'signature')));
-            const signatureVerificationResult = await verifySignature(params.publicKeyAgreedBid, get(messageObj, 'message'), signature);
+            const signatureVerificationResult = verifySignature(params.publicKeyAgreedBid, get(messageObj, 'message'), signature);
             if (!signatureVerificationResult) {
                 response.status = 'error';
                 response.verified = false;
@@ -345,7 +345,7 @@ exports.trade_verify = async (req, res) => {
                     `Message index: ${index}`,
                     'Error: Wrong signature'
                 ]
-                await logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
             }
         });
 
@@ -375,7 +375,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${storedMessage.hash}`,
                     'Error: Integrity error'
                 ]
-                await logMessage(logs, 'malicious', params.streamId, params.groupId);
+                logMessage(logs, 'malicious', params.streamId, params.groupId);
             }
         });
 
@@ -405,7 +405,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${storedMessage.hash}`,
                     'Error: Integrity error'
                 ]
-                await logMessage(logs, 'malicious', params.streamId, params.groupId);
+                logMessage(logs, 'malicious', params.streamId, params.groupId);
             }
         });
 
@@ -435,7 +435,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${get(storedMessage, 'hash')}`,
                     'Error: Integrity error'
                 ]
-                await logMessage(logs, 'malicious', params.streamId, params.groupId);
+                logMessage(logs, 'malicious', params.streamId, params.groupId);
             }
         });
 
