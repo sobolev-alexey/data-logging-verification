@@ -65,7 +65,6 @@ exports.completeRegistration = async uid => {
 
 exports.completeLogin = async (uid, flag) => {
   try {
-    console.log('Firebase completeLogin', uid, flag);
     await admin.firestore().collection('users').doc(uid).set({
       loginConfirmed: flag
     }, { merge: true });
@@ -85,6 +84,8 @@ exports.logMessage = async (messages, type, streamId = null, groupId = null) => 
     .firestore()
     .collection(type)
     .doc(`${groupId}__${streamId}`)
+    .collection('logs')
+    .doc(timestamp)
     .set({ 
       ...messages.map(message => message),
       streamId,
