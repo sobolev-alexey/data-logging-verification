@@ -4,7 +4,6 @@ const { composeAPI } = require('@iota/core');
 const { asciiToTrytes, trytesToAscii } = require('@iota/converter')
 const { createChannel, createMessage, mamAttach, mamFetchAll } = require('@iota/mam.js');
 const { getSettings, logMessage } = require('./firebase');
-const { getExplorerURL } = require('./helpers');
 
 const generateSeed = (length = 81) => {
   const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ9';
@@ -16,6 +15,10 @@ const generateSeed = (length = 81) => {
       }
   }
   return seed;
+};
+
+const getExplorerURL = (root, sideKey, network) => {
+  return `https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
 };
 
 const publish = async (payload, tag, currentState = {}, streamId = null, groupId = null) => {
@@ -142,5 +145,6 @@ const fetch = async (channelState, streamId = null, groupId = null) => {
 
 module.exports = {
   fetch,
-  publish
+  publish,
+  getExplorerURL
 }
