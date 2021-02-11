@@ -381,7 +381,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${storedMessage.hash}`,
                     'Error: Integrity error'
                 ]
-                logMessage(logs, 'malicious', params.streamId, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
             }
         });
 
@@ -411,7 +411,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${storedMessage.hash}`,
                     'Error: Integrity error'
                 ]
-                logMessage(logs, 'malicious', params.streamId, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
             }
         });
 
@@ -441,7 +441,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${get(storedMessage, 'hash')}`,
                     'Error: Integrity error'
                 ]
-                logMessage(logs, 'malicious', params.streamId, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
             }
         });
 
