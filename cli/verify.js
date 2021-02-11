@@ -3,7 +3,7 @@ const { getConfig, getKeys, callApi } = require('./utils');
 
 (async () => {
     try {
-        const data = {"message":"Hello World!","timestamp":"2/2/2021, 12:40:10 PM"};
+        const data = {"Quantity": {"Value": 85},"timestamp":"2/11/2021, 10:33:05 PM"};
         
         const config = getConfig();
         const { groupId, streamId } = config;
