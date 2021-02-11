@@ -18,14 +18,6 @@ Install dependencies listed in `functions` package.json files
 cd functions && yarn
 ```
 
-#### Build project
-
-Project is written in TypeScript, so you'll need to build it before deploying. This will create a new folder `lib` under `functions`.
-
-```javascript
-cd functions && yarn build
-```
-
 ## Testing
 
 To test this locally, run
