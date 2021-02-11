@@ -78,6 +78,7 @@ exports.log = async (req, res) => {
             return res.status(400).send({ status: "error", error: 'Stream attach error' });
         }
         streamDetails.metadata = metadata;
+        streamDetails.lastIndex = metadata && metadata.start;
         
         // Calculate and store payload hash, timestamp, message index
         const message = {
