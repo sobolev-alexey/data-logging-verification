@@ -84,7 +84,7 @@ exports.logMessage = async (messages, type, streamId = null, groupId = null) => 
     .firestore()
     .collection(type)
     .doc(`${groupId}__${streamId}`)
-    .collection('logs')
+    .collection(type)
     .doc(timestamp)
     .set({ 
       ...messages.map(message => message),
