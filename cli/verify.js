@@ -1,4 +1,3 @@
-const fs = require('fs');
 const { signMessage } = require('./encryption');
 const { getConfig, getKeys, callApi } = require('./utils');
 
@@ -7,7 +6,7 @@ const { getConfig, getKeys, callApi } = require('./utils');
         const data = {"message":"Hello World!","timestamp":"2/2/2021, 12:40:10 PM"};
         
         const config = getConfig();
-        const { groupId, streamId, tag, type } = config;
+        const { groupId, streamId } = config;
 
         // Get keys
         const keys = getKeys();
