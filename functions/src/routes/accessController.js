@@ -192,6 +192,8 @@ exports.completeLogin = async (req, res) => {
             .auth()
             .getUser(params.uid)
             .then(async (userRecord) => {
+                console.log(`Starting login confirmation for user`, userRecord.uid, userRecord.email, (new Date()).toLocaleString().replace(/\//g, '.'));
+
                 await completeLogin(userRecord.uid, true);
 
                 console.log(`Successfully logged in user`, userRecord.uid, userRecord.email, (new Date()).toLocaleString().replace(/\//g, '.'));
