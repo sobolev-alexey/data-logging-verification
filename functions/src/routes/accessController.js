@@ -72,7 +72,7 @@ exports.login = async (req, res) => {
                 
                 let token;
                 let confirmed = false;
-                for await (const iterator of Array.from(new Array(240), (x,i) => i)) {
+                for await (const iterator of Array.from(new Array(48), (x,i) => i)) {
                     if (!confirmed && userRecord) {
                         const userData = await getUser(userRecord.uid);
                         if (userData && userData.loginConfirmed) {
@@ -81,7 +81,7 @@ exports.login = async (req, res) => {
                             console.log(`Login with email address ${userData.email} successful. UID: ${userRecord.uid}, ${iterator}`, (new Date()).toLocaleString().replace(/\//g, '.'));
                         }
                     }
-                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 2000));
+                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 10000));
                 };
 
                 return res.send({ status: "success", token });
@@ -192,6 +192,8 @@ exports.completeLogin = async (req, res) => {
             .auth()
             .getUser(params.uid)
             .then(async (userRecord) => {
+                console.log(`Starting login confirmation for user`, userRecord.uid, userRecord.email, (new Date()).toLocaleString().replace(/\//g, '.'));
+
                 await completeLogin(userRecord.uid, true);
 
                 console.log(`Successfully logged in user`, userRecord.uid, userRecord.email, (new Date()).toLocaleString().replace(/\//g, '.'));

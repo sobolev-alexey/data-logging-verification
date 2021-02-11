@@ -73,7 +73,7 @@ const generatePayload = () => {
   const payload = {
     message: 'Hello World!',
     timestamp: (new Date()).toLocaleString()
-  };
+  }
 
   return payload;
 }

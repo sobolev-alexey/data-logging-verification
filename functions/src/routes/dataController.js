@@ -1,6 +1,8 @@
 const isEmpty = require('lodash/isEmpty');
-const { isJSON, checkMessageTag, getHash, getExplorerURL, fetchStream } = require("../helpers");
-const { publish } = require("../streams");
+const last = require('lodash/last');
+const get = require('lodash/get');
+const { isJSON, checkMessageTag, getHash, fetchStream } = require("../helpers");
+const { publish, getExplorerURL } = require("../streams");
 const { verifySignature } = require("../encryption");
 const {
     getSettings,
@@ -56,11 +58,16 @@ exports.log = async (req, res) => {
             }
         } else {
             streamMetadata = streamDetails && streamDetails.metadata;
+            
+            // Update list of stream writers
+            if (!streamDetails.writers.includes(uid)) {
+                streamDetails.writers.push(uid);
+            }
         }
 
         // MAM attach payload
         const { metadata, explorer } = await publish(
-            params.payload, 
+            { message: params.payload, signature: params.signature },
             params.tag || null, 
             streamMetadata, 
             params.streamId, 
@@ -71,6 +78,7 @@ exports.log = async (req, res) => {
             return res.status(400).send({ status: "error", error: 'Stream attach error' });
         }
         streamDetails.metadata = metadata;
+        streamDetails.lastIndex = metadata && metadata.start;
         
         // Calculate and store payload hash, timestamp, message index
         const message = {
@@ -182,25 +190,42 @@ exports.verify = async (req, res) => {
 
         // Verify payload integrity, compare fetched message hash with stored hash
         const payloadHash = getHash(JSON.stringify(params.payload));
-        if (payloadHash !== storedMessage.hash) {
-            // ToDo: Log malicious
+        const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
+        if (payloadHash !== storedMessage.hash || fetchedPayloadHash !== storedMessage.hash) {
             response.status = 'error';
             response.verified = false;
             response.malicious = true;
             response.error = 'Integrity error';
             response.statusCode = 400;
+            const logs = [
+                `Payload: ${JSON.stringify(params.payload)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                `Stored: ${JSON.stringify(storedMessage)}`,
+                `Payload Hash: ${payloadHash}`,
+                `Fetched Payload Hash: ${fetchedPayloadHash}`,
+                `Stored Payload Hash: ${storedMessage.hash}`,
+                'Error: Integrity error'
+            ]
+            await logMessage(logs, 'malicious', params.streamId, params.groupId);
         }
 
         // Verify signature of fetched message with the provided public key, flag malicious
-        const signature = Buffer.from(JSON.parse(storedMessage.signature));
-        const signatureVerificationResult = await verifySignature(params.publicKey, fetchedMessage, signature);
+        const signature = Buffer.from(JSON.parse(fetchedMessage.signature));
+        const signatureVerificationResult = await verifySignature(params.publicKey, fetchedMessage.message, signature);
         if (!signatureVerificationResult) {
-            // ToDo: Log malicious
             response.status = 'error';
             response.verified = false;
             response.malicious = true;
             response.error = 'Wrong signature';
             response.statusCode = 400;
+            const logs = [
+                `Payload: ${JSON.stringify(params.payload)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                `Fetched Signature: ${JSON.stringify(fetchedMessage.signature)}`,
+                'Error: Wrong signature'
+            ]
+            await logMessage(logs, 'malicious', params.streamId, params.groupId);
+
         }
 
         // Prepare response
@@ -209,7 +234,7 @@ exports.verify = async (req, res) => {
         response.explorer = getExplorerURL(root, sideKey, settings.tangle.network);
         
         if (params.returnPayload) {
-            response.fetchedPayload = fetchedMessage;
+            response.fetchedPayload = fetchedMessage.message;
         }
         if (params.returnMetadata) {
             response.metadata = storedMessage.metadata;
@@ -238,38 +263,228 @@ exports.trade_verify = async (req, res) => {
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        // Get user by ID from cloud database
-
-        // Verify signature 
-
-        // Verify payload
-
-        // Get existing producer stream by ID + group ID
-        // Get existing consumer stream by ID + group ID
-        // Get existing bid stream by ID + group ID
+        const response = { status: "success", verified: true, statusCode: 200 };
 
         // MAM fetch producer stream payload
+        const streamProducer = await fetchStream(params.groupId, params.streamIdProducer);
+        if (streamProducer.status !== 'success') {
+            response.status = 'error';
+            response.verified = false;
+            response.error = streamProducer.error;
+            response.statusCode = 400;
+        }
+        const fetchedProducerMessages = streamProducer.messages;
+
         // MAM fetch consumer stream payload
+        const streamConsumer = await fetchStream(params.groupId, params.streamIdConsumer);
+        if (streamConsumer.status !== 'success') {
+            response.status = 'error';
+            response.verified = false;
+            response.error = streamConsumer.error;
+            response.statusCode = 400;
+        }
+        const fetchedConsumerMessages = streamConsumer.messages;
+
         // MAM fetch bid stream payload
+        const streamAgreedBid = await fetchStream(params.groupId, params.streamIdAgreedBid);
+        if (streamAgreedBid.status !== 'success') {
+            response.status = 'error';
+            response.verified = false;
+            response.error = get(streamAgreedBid, 'error');
+            response.statusCode = 400;
+        }
+        const fetchedAgreedBidMessages = get(streamAgreedBid, 'messages');
 
         // Verify signature of fetched producer message with the provided producer public key, flag malicious
+        fetchedProducerMessages.forEach((messageObj, index) => {
+            const signature = Buffer.from(JSON.parse(messageObj.signature));
+            const signatureVerificationResult = verifySignature(params.publicKeyProducer, messageObj.message, signature);
+            if (!signatureVerificationResult) {
+                response.status = 'error';
+                response.verified = false;
+                response.malicious = true;
+                response.error = 'Wrong signature';
+                response.statusCode = 400;
+                const logs = [
+                    `Data stream: producer ${params.streamIdProducer}`,
+                    `Fetched: ${JSON.stringify(messageObj)}`,
+                    `Message index: ${index}`,
+                    'Error: Wrong signature'
+                ]
+                logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
+            }
+        });
+
         // Verify signature of fetched consumer message with the provided consumer public key, flag malicious
+        fetchedConsumerMessages.forEach((messageObj, index) => {
+            const signature = Buffer.from(JSON.parse(messageObj.signature));
+            const signatureVerificationResult = verifySignature(params.publicKeyConsumer, messageObj.message, signature);
+            if (!signatureVerificationResult) {
+                response.status = 'error';
+                response.verified = false;
+                response.malicious = true;
+                response.error = 'Wrong signature';
+                response.statusCode = 400;
+                const logs = [
+                    `Data stream: consumer ${params.streamIdConsumer}`,
+                    `Fetched: ${JSON.stringify(messageObj)}`,
+                    `Message index: ${index}`,
+                    'Error: Wrong signature'
+                ]
+                logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
+            }
+        });
+        
         // Verify signature of fetched bid message with the provided bid public key, flag malicious
+        fetchedAgreedBidMessages.forEach((messageObj, index) => {
+            const signature = Buffer.from(JSON.parse(get(messageObj, 'signature')));
+            const signatureVerificationResult = verifySignature(params.publicKeyAgreedBid, get(messageObj, 'message'), signature);
+            if (!signatureVerificationResult) {
+                response.status = 'error';
+                response.verified = false;
+                response.malicious = true;
+                response.error = 'Wrong signature';
+                response.statusCode = 400;
+                const logs = [
+                    `Data stream: agreed bid ${params.streamIdAgreedBid}`,
+                    `Fetched: ${JSON.stringify(messageObj)}`,
+                    `Message index: ${index}`,
+                    'Error: Wrong signature'
+                ]
+                logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
+            }
+        });
 
         // Verify producer payload integrity, compare fetched message hash with stored hash
+        const storedProducerMessages = await getStreamMessages(`${params.groupId}__${params.streamIdProducer}`);
+        storedProducerMessages.sort((a, b) => a.index - b.index).forEach((storedMessage, index) => {
+            const fetchedMessage = fetchedProducerMessages[index];
+            
+            if (isEmpty(storedMessage) || !isJSON(storedMessage) || isEmpty(fetchedMessage) || !isJSON(fetchedMessage)) {
+                response.status = 'error';
+                response.verified = false;
+                response.error = 'Message not found';
+                response.statusCode = 404;
+            }
+
+            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
+            if (fetchedPayloadHash !== storedMessage.hash) {
+                response.status = 'error';
+                response.verified = false;
+                response.malicious = true;
+                response.error = 'Integrity error';
+                response.statusCode = 400;
+                const logs = [
+                    `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                    `Stored: ${JSON.stringify(storedMessage)}`,
+                    `Fetched Payload Hash: ${fetchedPayloadHash}`,
+                    `Stored Payload Hash: ${storedMessage.hash}`,
+                    'Error: Integrity error'
+                ]
+                logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
+            }
+        });
+
         // Verify consumer payload integrity, compare fetched message hash with stored hash
+        const storedConsumerMessages = await getStreamMessages(`${params.groupId}__${params.streamIdConsumer}`);
+        storedConsumerMessages.sort((a, b) => a.index - b.index).forEach((storedMessage, index) => {
+            const fetchedMessage = fetchedConsumerMessages[index];
+            
+            if (isEmpty(storedMessage) || !isJSON(storedMessage) || isEmpty(fetchedMessage) || !isJSON(fetchedMessage)) {
+                response.status = 'error';
+                response.verified = false;
+                response.error = 'Message not found';
+                response.statusCode = 404;
+            }
+
+            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
+            if (fetchedPayloadHash !== storedMessage.hash) {
+                response.status = 'error';
+                response.verified = false;
+                response.malicious = true;
+                response.error = 'Integrity error';
+                response.statusCode = 400;
+                const logs = [
+                    `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                    `Stored: ${JSON.stringify(storedMessage)}`,
+                    `Fetched Payload Hash: ${fetchedPayloadHash}`,
+                    `Stored Payload Hash: ${storedMessage.hash}`,
+                    'Error: Integrity error'
+                ]
+                logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
+            }
+        });
+
         // Verify bid payload integrity, compare fetched message hash with stored hash
+        const storedAgreedBidMessages = await getStreamMessages(`${params.groupId}__${params.streamIdAgreedBid}`);
+        storedAgreedBidMessages.sort((a, b) => get(a, 'index') - get(b, 'index')).forEach((storedMessage, index) => {
+            const fetchedMessage = fetchedAgreedBidMessages[index];
+            
+            if (isEmpty(storedMessage) || !isJSON(storedMessage) || isEmpty(fetchedMessage) || !isJSON(fetchedMessage)) {
+                response.status = 'error';
+                response.verified = false;
+                response.error = 'Message not found';
+                response.statusCode = 404;
+            }
+
+            const fetchedPayloadHash = getHash(JSON.stringify(get(fetchedMessage, 'message')));
+            if (fetchedPayloadHash !== get(storedMessage, 'hash')) {
+                response.status = 'error';
+                response.verified = false;
+                response.malicious = true;
+                response.error = 'Integrity error';
+                response.statusCode = 400;
+                const logs = [
+                    `Fetched: ${JSON.stringify(get(fetchedMessage, 'message'))}`,
+                    `Stored: ${JSON.stringify(storedMessage)}`,
+                    `Fetched Payload Hash: ${fetchedPayloadHash}`,
+                    `Stored Payload Hash: ${get(storedMessage, 'hash')}`,
+                    'Error: Integrity error'
+                ]
+                logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
+            }
+        });
 
         // Calculate produced energy
+        response.energyProduced = 0;
+        fetchedProducerMessages.forEach(messageObj => {
+            response.energyProduced += Number(get(messageObj, 'message.Quantity.Value'));
+        });
+
         // Calculate consumed energy
+        response.energyConsumed = 0;
+        fetchedConsumerMessages.forEach(messageObj => {
+            response.energyConsumed += Number(get(messageObj, 'message.Quantity.Value'));
+        });
 
         // Verify energy amount match between producer, consumer, bid
+        response.energyAgreedBid = get(last(fetchedAgreedBidMessages), 'message.Quantity.Value');
+        if (response.energyAgreedBid !== response.energyProduced || response.energyAgreedBid !== response.energyConsumed) {
+            response.status = 'error';
+            response.verified = false;
+            response.error = 'Amount mismatch error';
+            response.statusCode = 400;
+        }
         
         // Optionally verify starting time
         
         // Prepare response
+        if (params.returnPayload) {
+            response.fetchedPayload = {
+                producer: fetchedProducerMessages,
+                consumer: fetchedConsumerMessages,
+                bid: fetchedAgreedBidMessages
+            };
+        }
+        if (params.returnMetadata) {
+            response.metadata = {
+                producer: storedProducerMessages.map(message => get(message, 'metadata')),
+                consumer: storedConsumerMessages.map(message => get(message, 'metadata')),
+                bid: storedAgreedBidMessages.map(message => get(message, 'metadata'))
+            };
+        }
 
-        return res.json({ status: "success" });
+        return res.json(response);
     } catch (error) {
         console.error("Verify trade failed. Params: ", req.body, error);
         return res.send({ status: "error", error: error.message, code: error.code });

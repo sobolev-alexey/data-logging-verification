@@ -69,7 +69,7 @@ exports.completeLogin = async (uid, flag) => {
       loginConfirmed: flag
     }, { merge: true });
   } catch(error) {
-      console.error('Firebase completeRegistration', error);
+      console.error('Firebase completeLogin', error);
       throw error;
   }
 }
@@ -84,6 +84,8 @@ exports.logMessage = async (messages, type, streamId = null, groupId = null) => 
     .firestore()
     .collection(type)
     .doc(`${groupId}__${streamId}`)
+    .collection(type)
+    .doc(timestamp)
     .set({ 
       ...messages.map(message => message),
       streamId,

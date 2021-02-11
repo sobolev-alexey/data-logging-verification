@@ -61,10 +61,6 @@ const getHash = payload => {
   return crypto.createHash('sha256').update(payload).digest('hex');
 };
 
-const getExplorerURL = (root, sideKey, network) => {
-  return `https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
-};
-
 const checkMessageTag = tag => {
   const regex = /^[A-Za-z0-9]+$/;
   return regex.test(tag) && tag.length <= 27;
@@ -93,7 +89,6 @@ module.exports = {
   verifyToken,
   isJSON,
   getHash,
-  getExplorerURL,
   checkMessageTag,
   fetchStream
 };

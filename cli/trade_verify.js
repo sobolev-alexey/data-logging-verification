@@ -3,7 +3,11 @@ const { getConfig, getKeys, callApi } = require('./utils');
 
 (async () => {
     try {
-        const data = {"Quantity": {"Value": 85},"timestamp":"2/11/2021, 10:33:05 PM"};
+        const data = {
+          streamIdProducer: 'test-producer',
+          streamIdConsumer: 'test-consumer',
+          streamIdAgreedBid: 'test-bid'
+        };
         
         const config = getConfig();
         const { groupId, streamId } = config;
@@ -15,16 +19,20 @@ const { getConfig, getKeys, callApi } = require('./utils');
         const signature = signMessage(keys.privateKey, data);
 
         const payload = { 
-          signature: JSON.stringify(signature),
-          publicKey: keys.publicKey,
           payload: data, 
-          streamId,
+          signature: JSON.stringify(signature),
+          streamIdProducer: 'test-producer',
+          streamIdConsumer: 'test-consumer',
+          streamIdAgreedBid: 'test-bid',
+          publicKeyProducer: keys.publicKey,
+          publicKeyConsumer: keys.publicKey, 
+          publicKeyAgreedBid: keys.publicKey,
           groupId,
           returnPayload: true,
           returnMetadata: true
         };
 
-        const result = await callApi('verify', payload, true);
+        const result = await callApi('trade_verify', payload, true);
         if (result && !result.error && result.status === 'success') {
           console.log(result);
         } else {
