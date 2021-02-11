@@ -58,6 +58,11 @@ exports.log = async (req, res) => {
             }
         } else {
             streamMetadata = streamDetails && streamDetails.metadata;
+            
+            // Update list of stream writers
+            if (!streamDetails.writers.includes(uid)) {
+                streamDetails.writers.push(uid);
+            }
         }
 
         // MAM attach payload
