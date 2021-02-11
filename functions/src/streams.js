@@ -35,8 +35,8 @@ const publish = async (payload, tag, currentState = {}, streamId = null, groupId
   try {
     // Setup the details for the channel.
     const { depth, mwm, node, security, defaultTag, network } = settings.tangle;
-    const sideKey = generateSeed();
     let channelState = !isEmpty(currentState) ? currentState : null;
+    const sideKey = !isEmpty(currentState) ? currentState.sideKey : generateSeed();
 
     // If we haven't received existing channel details then create a new channel.
     if (!channelState || isEmpty(channelState)) {
