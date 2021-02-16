@@ -18,8 +18,6 @@ const login = async (email, keyFile) => {
         // Update token
         fs.writeFileSync('./token.json', result.token);
       }
-    }
-    if (result.status === 'success') {
       console.log(chalk.green.bold('\nLogin successful'));
     } else {
       result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
