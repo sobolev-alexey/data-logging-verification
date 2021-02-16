@@ -21,22 +21,23 @@ const verify = require('./verify');
 let configFilePath = './config.json';
 let config = getConfig(configFilePath);
 
-const execute = async (message, func, saveToFile = false) => {
+const execute = async (message, func, file = false) => {
   try {
     console.log(chalk.white.bold(message));
     startSpinner(showMainMenu);
     const response = await func();
     stopSpinner();
-    if (saveToFile && response && isJSON(response)) {
+
+    if (file && response && isJSON(response)) {
       inquirer.prompt([{
         type: 'confirm',
         name: 'saveToFile',
-        message: `Save output to file ${saveToFile} ?`,
+        message: `Save output to file ${file} ?`,
         default: false,
       }]).then(async answers => {
         if (answers.saveToFile) {
-          await saveToFile(saveToFile, response);
-          console.log(chalk.green.bold('Saved to file', saveToFile));
+          await saveToFile(file, response);
+          console.log(chalk.green.bold('Saved to file', file));
         }
         showMainMenu();
       });
@@ -44,7 +45,7 @@ const execute = async (message, func, saveToFile = false) => {
   } catch (error) {
     console.error(chalk.red(error.message));
   } finally {
-    !saveToFile && showMainMenu();
+    !file && showMainMenu();
   }
 }
 
