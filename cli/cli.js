@@ -127,6 +127,34 @@ const inputData = {
   },
 }
 
+const inputPublicKey = {
+  type: 'input',
+  name: 'publicKey',
+  message: 'Public key of the logger',
+  validate: answer => answer ? true : 'Group ID is empty!',
+}
+
+const inputMessageIndex = {
+  type: 'number',
+  name: 'messageIndex',
+  message: 'Index of the message [optional]',
+  default: 0,
+}
+
+const inputReturnPayload = {
+  type: 'confirm',
+  name: 'returnPayload',
+  message: 'Return fetched payload?',
+  default: true,
+}
+
+const inputReturnMetadata = {
+  type: 'confirm',
+  name: 'returnMetadata',
+  message: 'Return stream metadata?',
+  default: true,
+}
+
 const mainMenuMap = new Map([
   ['Log', async () => {
     console.clear();
@@ -139,8 +167,18 @@ const mainMenuMap = new Map([
       () => log(parseJSON(data), streamId, groupId, tag, type, keyFile)
     );
   }],
-  ['Verify data', async (answers) => {
-    showMainMenu()
+  ['Verify data', async () => {
+    console.clear();
+    const { streamId, groupId, data, publicKey, messageIndex, returnPayload, returnMetadata, keyFile } = await inquirer.prompt([
+      inputStreamId, inputGroupId, inputData, inputPublicKey, inputMessageIndex,
+      inputReturnPayload, inputReturnMetadata, inputKeyFile
+    ]);
+    updateConfig(configFilePath, { streamId, groupId, keyFile });
+    execute(
+      'Verifying message...',
+      () => verify(parseJSON(data), streamId, groupId, fixPublicKey(publicKey), messageIndex, returnPayload, returnMetadata, keyFile),
+      generateFileName(streamId)
+    );
   }],
   ['Verify trade', async () => {
 
