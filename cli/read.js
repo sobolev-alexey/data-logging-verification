@@ -18,13 +18,14 @@ const read = async (streamId, groupId, keyFile) => {
     };
 
     const result = await callApi('read', payload, true);
+    
     if (result && !result.error && result.status === 'success') {
       if (result.metadata) {
         console.log('\n');
         console.log(JSON.stringify(result, null, 2));
       }
     } else {
-      result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
+      result && result.error && console.error(chalk.red.bold('\n', result.error));
     }
     return result;
   } catch (error) {

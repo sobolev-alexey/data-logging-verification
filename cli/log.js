@@ -33,7 +33,7 @@ const log = async (data, streamId, groupId, tag, type, keyFile) => {
         fs.writeFileSync(`./${streamId}.json`, JSON.stringify(metadata, undefined, "\t"));
       }
     } else {
-      result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
+      result && result.error && console.error(chalk.red.bold('\n', result.error));
     }
     return result;
   } catch (error) {

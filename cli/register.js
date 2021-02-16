@@ -28,7 +28,7 @@ const { getConfig, callApi } = require('./utils');
             fs.writeFileSync('./token.json', result.token);
           }
         } else {
-          result && result.error && console.log(result.status, result.error);
+          result && result.error && console.log(result.error);
         }
         return result;
     } catch (error) {

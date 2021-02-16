@@ -33,10 +33,11 @@ const { getConfig, getKeys, callApi } = require('./utils');
         };
 
         const result = await callApi('trade_verify', payload, true);
+        
         if (result && !result.error && result.status === 'success') {
           console.log(result);
         } else {
-          result && result.error && console.log(result.status, result.error);
+          result && result.error && console.log(result.error);
         }
         return result;
     } catch (error) {
