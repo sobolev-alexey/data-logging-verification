@@ -1,30 +1,32 @@
 const fs = require('fs');
+const chalk = require('chalk');
 const { signMessage } = require('./encryption');
-const { getConfig, getKeys, callApi } = require('./utils');
+const { getKeys, callApi } = require('./utils');
 
-(async () => {
-    try {
-        const config = getConfig();
-        
-        // Get keys
-        const keys = getKeys();
+const login = async (email, keyFile) => {
+  try {
+    // Get keys
+    const keys = getKeys(keyFile);
 
-        // Sign message
-        const signature = signMessage(keys.privateKey,  { email: config.email });
+    // Sign message
+    const signature = signMessage(keys.privateKey,  { email });
 
-        const result = await callApi('login', { email: config.email, signature: JSON.stringify(signature) });
+    const result = await callApi('login', { email, signature: JSON.stringify(signature) });
 
-        if (result && result.status === 'success') {
-          if (result.token) {
-            // Update token
-            fs.writeFileSync('./token.json', result.token);
-
-            console.log(result);
-          }
-        } else {
-          result && result.error && console.log(result.status, result.error);
-        }
-    } catch (error) {
-      console.log(error)
+    if (result && result.status === 'success') {
+      if (result.token) {
+        // Update token
+        fs.writeFileSync('./token.json', result.token);
+      }
     }
-})();
+    if (result.status === 'success') {
+      console.log(chalk.green.bold('\nLogin successful'));
+    } else {
+      result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
+    }
+  } catch (error) {
+    console.log(error)
+  }
+}
+
+module.exports = login;
