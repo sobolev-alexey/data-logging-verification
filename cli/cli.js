@@ -8,7 +8,8 @@ const {
   parseJSON, 
   isJSON, 
   generateFileName,
-  saveToFile
+  saveToFile,
+  fixPublicKey
 } = require('./utils');
 const { startSpinner, stopSpinner } = require('./spinner');
 

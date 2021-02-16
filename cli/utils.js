@@ -127,10 +127,12 @@ const generateFileName = streamId => {
 const saveToFile = async (fileName, data) => {
   try {
     fs.writeFileSync(fileName, JSON.stringify(data, undefined, "\t"));
-} catch (error) {
-    throw new Error(error);
+  } catch (error) {
+      throw new Error(error);
+  }
 }
-}
+
+const fixPublicKey = key => key.split('\\n').join('\n');
 
 module.exports = {
   getConfig,
@@ -142,5 +144,6 @@ module.exports = {
   parseJSON,
   isJSON,
   generateFileName,
-  saveToFile
+  saveToFile,
+  fixPublicKey
 };
