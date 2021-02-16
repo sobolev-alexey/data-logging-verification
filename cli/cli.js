@@ -276,7 +276,15 @@ const mainMenuMap = new Map([
     )
   }],
   ['Register', async () => {
-
+    console.clear();
+    const { email, groupId, keyFile } = await inquirer.prompt([
+      inputEmail, inputGroupId, inputKeyFile
+    ]);
+    updateConfig(configFilePath, { email, keyFile });
+    execute(
+      'Click on the link in your email to confirm registration.',
+      () => register(email, groupId, keyFile)
+    )
    }],
   [new inquirer.Separator()],
   ['Exit', () => {
