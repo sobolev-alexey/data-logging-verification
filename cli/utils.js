@@ -1,13 +1,29 @@
 const fs = require('fs');
 const axios = require('axios');
 
-const getConfig = () => {
+const getConfig = (configFile = './config.json') => {
   try {
       let config = {};
-      let storedConfig = fs.readFileSync('./config.json');
+      let storedConfig = fs.readFileSync(configFile);
       if (storedConfig) {
         config = JSON.parse(storedConfig.toString());
       }
+      return config;
+  } catch (error) {
+      throw new Error(error);
+  }
+}
+
+const updateConfig = (configFile = './config.json', values) => {
+  try {
+      let config = {};
+      let storedConfig = fs.readFileSync(configFile);
+      if (storedConfig) {
+        config = JSON.parse(storedConfig.toString());
+        config = { ...config, ...values };
+      }
+      fs.writeFileSync(configFile, JSON.stringify(config, undefined, "\t"));
+
       return config;
   } catch (error) {
       throw new Error(error);
@@ -27,10 +43,10 @@ const getToken = () => {
   }
 }
 
-const getKeys = () => {
+const getKeys = (keysFile = './keys.json') => {
   try {
       let keys = {};
-      let storedKeys = fs.readFileSync('./keys.json');
+      let storedKeys = fs.readFileSync(keysFile);
       if (storedKeys) {
           keys = JSON.parse(storedKeys.toString());
       }
@@ -38,6 +54,11 @@ const getKeys = () => {
   } catch (error) {
       throw new Error(error);
   }
+}
+
+const validateEmail = email => {
+  const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return re.test(String(email).toLowerCase());
 }
 
 const callApi = async (url, payload, auth = false) => {
@@ -60,7 +81,8 @@ const callApi = async (url, payload, auth = false) => {
     // error.response.statusText
     // error.response.data.message
     if (!error.response || !error.response.data || !error.response.data.message) {
-      console.error(error);
+      console.error('\n', error.message, error.response.statusText);
+      console.error(error.response.data);
     }
     return { 
       error: error.response.data.message,
@@ -78,10 +100,47 @@ const generatePayload = () => {
   return payload;
 }
 
+const parseJSON = string =>
+  JSON.parse(string.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2": '));
+
+const isJSON = data => {
+  let hasKeys = false;
+  for (let property in data) {
+    if (data.hasOwnProperty(property) && !(/^\d+$/.test(property))) {
+      hasKeys = true;
+      break;
+    }
+  }
+
+  return (hasKeys && data.constructor === Object && data.constructor !== Array) ? true : false;
+}
+
+const generateFileName = streamId => {
+  const timestamp = (new Date()).toLocaleString()
+    .replace(/\//g, '.')
+    .replace(/ /g, '')
+    .replace(/,/g, '-')
+    .replace(/:/g, '.');
+  return `./${streamId}-${timestamp}.json`;
+}
+
+const saveToFile = async (fileName, data) => {
+  try {
+    fs.writeFileSync(fileName, JSON.stringify(data, undefined, "\t"));
+} catch (error) {
+    throw new Error(error);
+}
+}
 
 module.exports = {
   getConfig,
   getKeys,
   generatePayload,
   callApi,
+  updateConfig,
+  validateEmail,
+  parseJSON,
+  isJSON,
+  generateFileName,
+  saveToFile
 };
