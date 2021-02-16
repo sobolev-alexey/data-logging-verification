@@ -2,14 +2,8 @@
 const inquirer = require('inquirer');
 const chalk = require('chalk');
 const { 
-  getConfig, 
-  updateConfig, 
-  validateEmail, 
-  parseJSON, 
-  isJSON, 
-  generateFileName,
-  saveToFile,
-  fixPublicKey
+  updateConfig, parseJSON, isJSON, 
+  generateFileName, saveToFile, fixPublicKey
 } = require('./utils');
 const { startSpinner, stopSpinner } = require('./spinner');
 
@@ -19,8 +13,6 @@ const read = require('./read');
 const verify = require('./verify');
 // const trade_verify = require('./trade_verify');
 
-let configFilePath = './config.json';
-let config = getConfig(configFilePath);
 
 const execute = async (message, func, file = false) => {
   let response;
@@ -293,23 +285,18 @@ const mainMenuMap = new Map([
   }],
 ]);
 
-const mainMenu = [{
-  type: 'rawlist',
-  name: 'mainChoice',
-  message: 'Please select a type of request',
-  pageSize: 10,
-  choices: Array.from(mainMenuMap.entries()).map(arr => arr[0])
-}]
-
-const showMainMenu = (configFile = configFilePath, questions = mainMenu) => {
-  configFilePath = configFile;
-  config = getConfig(configFile);
-
-  inquirer.prompt(mainMenu).then(async answers => {
+const showMainMenu = () => {
+  inquirer.prompt([{
+    type: 'rawlist',
+    name: 'mainChoice',
+    message: 'Please select a type of request',
+    pageSize: 10,
+    choices: Array.from(mainMenuMap.entries()).map(arr => arr[0])
+  }]).then(async answers => {
     mainMenuMap.get(answers.mainChoice)();
   });
 }
 
 showMainMenu();
 
-module.exports = configFile => showMainMenu(configFile);
+module.exports = () => showMainMenu();
