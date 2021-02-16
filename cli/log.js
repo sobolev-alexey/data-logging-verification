@@ -36,7 +36,7 @@ const log = async (data, streamId, groupId, tag, type, keyFile) => {
       result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
     }
   } catch (error) {
-    console.log(666, error)
+    console.log(error)
   }
 }
 

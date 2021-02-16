@@ -39,6 +39,6 @@ const { getConfig, getKeys, callApi } = require('./utils');
           result && result.error && console.log(result.status, result.error);
         }
     } catch (error) {
-      console.log(666, error)
+      console.log(error)
     }
 })();
