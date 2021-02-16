@@ -2,7 +2,7 @@ const chalk = require('chalk');
 const { signMessage } = require('./encryption');
 const { getKeys, callApi } = require('./utils');
 
-const verify = async (data, streamId, groupId, messageIndex = 0, returnPayload = false, returnMetadata = false, keyFile) => {
+const verify = async (data, streamId, groupId, publicKey, messageIndex = 0, returnPayload = false, returnMetadata = false, keyFile) => {
   try {
     // Get keys
     const keys = getKeys(keyFile);
@@ -12,7 +12,7 @@ const verify = async (data, streamId, groupId, messageIndex = 0, returnPayload =
 
     const payload = { 
       signature: JSON.stringify(signature),
-      publicKey: keys.publicKey,
+      publicKey,
       payload: data, 
       streamId,
       groupId,
