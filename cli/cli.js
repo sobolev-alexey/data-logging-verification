@@ -13,12 +13,12 @@ const {
 } = require('./inputs');
 const { startSpinner, stopSpinner } = require('./spinner');
 
+const register = require('./register');
 const login = require('./login');
 const log = require('./log');
 const read = require('./read');
 const verify = require('./verify');
-// const trade_verify = require('./trade_verify');
-
+const trade_verify = require('./trade_verify');
 
 const execute = async (message, func, file = false) => {
   let response;
