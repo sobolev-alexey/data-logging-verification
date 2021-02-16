@@ -135,7 +135,7 @@ const inputPublicKey = {
   type: 'input',
   name: 'publicKey',
   message: 'Public key of the logger',
-  validate: answer => answer ? true : 'Group ID is empty!',
+  validate: answer => answer ? true : 'Public key is empty!',
 }
 
 const inputMessageIndex = {
@@ -157,6 +157,48 @@ const inputReturnMetadata = {
   name: 'returnMetadata',
   message: 'Return stream metadata?',
   default: true,
+}
+
+const inputStreamIdProducer = {
+  type: 'input',
+  name: 'streamIdProducer',
+  message: "Producer Stream ID",
+  validate: answer => answer ? true : 'Producer stream ID is empty!',
+}
+
+const inputStreamIdConsumer = {
+  type: 'input',
+  name: 'streamIdConsumer',
+  message: "Consumer Stream ID",
+  validate: answer => answer ? true : 'Consumer stream ID is empty!',
+}
+
+const inputStreamIdAgreedBid = {
+  type: 'input',
+  name: 'streamIdAgreedBid',
+  message: "Agreed Bid Stream ID",
+  validate: answer => answer ? true : 'Agreed Bid stream ID is empty!',
+}
+
+const inputPublicKeyProducer = {
+  type: 'input',
+  name: 'publicKeyProducer',
+  message: 'Public key of the producer',
+  validate: answer => answer ? true : 'Public key of the producer is empty!',
+}
+
+const inputPublicKeyConsumer = {
+  type: 'input',
+  name: 'publicKeyConsumer',
+  message: 'Public key of the consumer',
+  validate: answer => answer ? true : 'Public key of the consumer is empty!',
+}
+
+const inputPublicKeyAgreedBid = {
+  type: 'input',
+  name: 'publicKeyAgreedBid',
+  message: 'Public key of the bid logger',
+  validate: answer => answer ? true : 'Public key of the bid logger is empty!',
 }
 
 const mainMenuMap = new Map([
@@ -185,7 +227,29 @@ const mainMenuMap = new Map([
     );
   }],
   ['Verify trade', async () => {
-
+    console.clear();
+    const { 
+      streamIdProducer, publicKeyProducer, 
+      streamIdConsumer, publicKeyConsumer,
+      streamIdAgreedBid, publicKeyAgreedBid,
+      groupId, returnPayload, returnMetadata, keyFile 
+    } = await inquirer.prompt([
+      inputStreamIdProducer, inputPublicKeyProducer, 
+      inputStreamIdConsumer, inputPublicKeyConsumer,
+      inputStreamIdAgreedBid, inputPublicKeyAgreedBid,
+      inputGroupId, inputReturnPayload, inputReturnMetadata, inputKeyFile
+    ]);
+    updateConfig(configFilePath, { groupId, keyFile });
+    execute(
+      'Verifying trade...',
+      () => trade_verify(
+        streamIdProducer, fixPublicKey(publicKeyProducer), 
+        streamIdConsumer, fixPublicKey(publicKeyConsumer), 
+        streamIdAgreedBid, fixPublicKey(publicKeyAgreedBid), 
+        groupId, returnPayload, returnMetadata, keyFile
+      ),
+      generateFileName(streamIdAgreedBid)
+    );
   }],
   ['Index', async () => {
     console.clear();
