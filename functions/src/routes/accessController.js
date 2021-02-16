@@ -125,7 +125,7 @@ exports.register = async (req, res) => {
                 
                 let token;
                 let confirmed = false;
-                for await (const _ of Array.from(new Array(250), (x,i) => i)) {
+                for await (const _ of Array.from(new Array(48), (x,i) => i)) {
                     !confirmed && userRecord && admin
                         .auth()
                         .getUser(userRecord.uid)
@@ -136,7 +136,7 @@ exports.register = async (req, res) => {
                                 console.log(`Email address ${user.email} successfully verified. UID: ${user.uid}`);
                             }
                     })
-                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 2000));
+                    await new Promise(resolved => setTimeout(resolved, confirmed ? 0 : 10000));
                 };
 
                 const settings = await getSettings();
