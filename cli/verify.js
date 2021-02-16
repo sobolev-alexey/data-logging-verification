@@ -28,6 +28,7 @@ const verify = async (data, streamId, groupId, messageIndex = 0, returnPayload =
     } else {
       result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
     }
+    return result;
   } catch (error) {
     console.log(error)
   }

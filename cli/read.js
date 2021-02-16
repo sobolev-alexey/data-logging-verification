@@ -26,6 +26,7 @@ const read = async (streamId, groupId, keyFile) => {
     } else {
       result && result.error && console.error(chalk.red.bold('\n', result.status, result.error));
     }
+    return result;
   } catch (error) {
     console.log(error)
   }
