@@ -57,7 +57,7 @@ const mainMenuMap = new Map([
     const { streamId, groupId, data, type, tag, keyFile } = await inquirer.prompt([
       inputStreamId, inputGroupId, inputData, inputType, inputTag, inputKeyFile
     ]);
-    updateConfig(configFilePath, { streamId, groupId, type, tag, keyFile });
+    updateConfig({ streamId, groupId, type, tag, keyFile });
     execute(
       'Appending data to stream, please wait...',
       () => log(parseJSON(data), streamId, groupId, tag, type, keyFile)
@@ -69,7 +69,7 @@ const mainMenuMap = new Map([
       inputStreamId, inputGroupId, inputData, inputPublicKey, inputMessageIndex,
       inputReturnPayload, inputReturnMetadata, inputKeyFile
     ]);
-    updateConfig(configFilePath, { streamId, groupId, keyFile });
+    updateConfig({ streamId, groupId, keyFile });
     execute(
       'Verifying message...',
       () => verify(parseJSON(data), streamId, groupId, fixPublicKey(publicKey), messageIndex, returnPayload, returnMetadata, keyFile),
@@ -89,7 +89,7 @@ const mainMenuMap = new Map([
       inputStreamIdAgreedBid, inputPublicKeyAgreedBid,
       inputGroupId, inputReturnPayload, inputReturnMetadata, inputKeyFile
     ]);
-    updateConfig(configFilePath, { groupId, keyFile });
+    updateConfig({ groupId, keyFile });
     execute(
       'Verifying trade...',
       () => trade_verify(
@@ -106,7 +106,7 @@ const mainMenuMap = new Map([
     const { streamId, groupId, keyFile } = await inquirer.prompt([
       inputStreamId, inputGroupId, inputKeyFile
     ]);
-    updateConfig(configFilePath, { streamId, groupId, keyFile });
+    updateConfig({ streamId, groupId, keyFile });
     execute(
       'Retrieving data stream...',
       () => read(streamId, groupId, keyFile),
@@ -119,7 +119,7 @@ const mainMenuMap = new Map([
     const { email, keyFile } = await inquirer.prompt([
       inputEmail, inputKeyFile
     ]);
-    updateConfig(configFilePath, { email, keyFile });
+    updateConfig({ email, keyFile });
     execute(
       'Click on the link in your email to confirm login.',
       () => login(email, keyFile)
@@ -130,7 +130,7 @@ const mainMenuMap = new Map([
     const { email, groupId, keyFile } = await inquirer.prompt([
       inputEmail, inputGroupId, inputKeyFile
     ]);
-    updateConfig(configFilePath, { email, keyFile });
+    updateConfig({ email, keyFile });
     execute(
       'Click on the link in your email to confirm registration.',
       () => register(email, groupId, keyFile)
@@ -155,6 +155,6 @@ const showMainMenu = () => {
   });
 }
 
-showMainMenu();
+// showMainMenu();
 
 module.exports = () => showMainMenu();

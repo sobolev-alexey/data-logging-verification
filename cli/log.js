@@ -1,7 +1,7 @@
 const fs = require('fs');
 const chalk = require('chalk');
 const { signMessage } = require('./encryption');
-const { getConfig, getKeys, callApi } = require('./utils');
+const { getKeys, callApi } = require('./utils');
 
 const log = async (data, streamId, groupId, tag, type, keyFile) => {
   try {

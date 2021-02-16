@@ -14,7 +14,7 @@ const getConfig = (configFile = './config.json') => {
   }
 }
 
-const updateConfig = (configFile = './config.json', values) => {
+const updateConfig = (values, configFile = './config.json') => {
   try {
       let config = {};
       let storedConfig = fs.readFileSync(configFile);

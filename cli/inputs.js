@@ -1,7 +1,6 @@
 const { getConfig, parseJSON, isJSON, validateEmail } = require('./utils');
 
-const configFilePath = './config.json';
-const config = getConfig(configFilePath);
+const config = getConfig();
 
 const inputStreamId = {
   type: 'input',
