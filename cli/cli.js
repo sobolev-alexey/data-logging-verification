@@ -23,13 +23,14 @@ let configFilePath = './config.json';
 let config = getConfig(configFilePath);
 
 const execute = async (message, func, file = false) => {
+  let response;
   try {
     console.log(chalk.white.bold(message));
     startSpinner(showMainMenu);
-    const response = await func();
+    response = await func();
     stopSpinner();
 
-    if (file && response && isJSON(response)) {
+    if (file && response && isJSON(response) && response.status === 'success') {
       inquirer.prompt([{
         type: 'confirm',
         name: 'saveToFile',
@@ -46,7 +47,9 @@ const execute = async (message, func, file = false) => {
   } catch (error) {
     console.error(chalk.red(error.message));
   } finally {
-    !file && showMainMenu();
+    if (!file || response.status !== 'success') {
+      showMainMenu();
+    }
   }
 }
 
