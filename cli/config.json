@@ -1,0 +1,9 @@
+{
+	"email": "",
+	"groupId": "test",
+	"streamId": "",
+	"type": "data",
+	"tag": "DATA9LOGGING9VERIFICATION",
+	"serviceUrl": "https://us-central1-data-logging-verification.cloudfunctions.net/api",
+	"keyFile": "./keys.json"
+}
