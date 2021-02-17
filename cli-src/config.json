@@ -1,6 +1,6 @@
 {
     "streamId": "",
     "type": "data",
-    "tag": "TEST9STREAM9DATA",
+    "tag": "DATALOGGINGVERIFICATION",
     "serviceUrl": "https://us-central1-data-logging-verification.cloudfunctions.net/api"
 }
