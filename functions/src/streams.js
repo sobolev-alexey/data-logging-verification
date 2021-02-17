@@ -21,7 +21,7 @@ const getExplorerURL = (root, sideKey, network) => {
   return `https://utils.iota.org/mam/${root}/restricted/${sideKey}/${network}`;
 };
 
-const publish = async (payload, tag, currentState = {}, streamId = null, groupId = null) => {
+const publish = async (payload, tag, currentState = {}, streamId = null) => {
   const logs = [];
 
   const settings = await getSettings();
@@ -77,7 +77,7 @@ const publish = async (payload, tag, currentState = {}, streamId = null, groupId
         console.log(bundleMessage);
       }
 
-      await logMessage(logs, 'logs', streamId, groupId);
+      await logMessage(logs, 'logs', streamId);
     }
 
     return { metadata: channelState, explorer };
@@ -89,7 +89,7 @@ const publish = async (payload, tag, currentState = {}, streamId = null, groupId
   }
 }
 
-const fetch = async (channelState, streamId = null, groupId = null) => {
+const fetch = async (channelState, streamId = null) => {
   const logs = [];
 
   const settings = await getSettings();
@@ -131,7 +131,7 @@ const fetch = async (channelState, streamId = null, groupId = null) => {
         logs.push(message);
       }
 
-      await logMessage(logs, 'logs', streamId, groupId);
+      await logMessage(logs, 'logs', streamId);
     }
 
     return result;
