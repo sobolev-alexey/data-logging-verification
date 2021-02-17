@@ -17,28 +17,27 @@ exports.getSettings = async () => {
   throw Error(message);
 };
 
-exports.logMessage = async (messages, type, streamId = null, groupId = null) => {
-  if (!streamId || !groupId) return;
+exports.logMessage = async (messages, type, streamId = null) => {
+  if (!streamId) return;
   if (type !== 'logs' && type !== 'malicious') return;
   const timestamp = `${(new Date()).toLocaleString().replace(/\//g, '.')}`;
 
-  // Save logs by group and stream
+  // Save logs by stream
   await admin
     .firestore()
     .collection(type)
-    .doc(`${groupId}__${streamId}`)
+    .doc(streamId)
     .collection(type)
     .doc(timestamp)
     .set({ 
       ...messages.map(message => message),
       streamId,
-      groupId,
       timestamp
     }, { merge: true });
 };
 
 exports.getStreamDetails = async key => {
-  // Get stream details by groupId + streamId
+  // Get stream details by streamId
   const doc = await admin
     .firestore()
     .collection('streams')
@@ -48,7 +47,7 @@ exports.getStreamDetails = async key => {
 };
 
 exports.getStreamMessages = async key => {
-  // Get stream messages by groupId + streamId
+  // Get stream messages by streamId
   const messagesSnapshot = await admin
     .firestore()
     .collection(`streams/${key}/messages`)
