@@ -135,11 +135,12 @@ exports.verify = async (req, res) => {
 
         // MAM fetch payload
         const result = await fetchStream(params.streamId);
-        if (result.status !== 'success') {
+        if (result.status !== 'success' || !result.messages) {
             response.status = 'error';
             response.verified = false;
             response.error = result.error;
             response.statusCode = 400;
+            return res.json(response);
         }
 
         const fetchedMessages = result.messages;
@@ -153,6 +154,7 @@ exports.verify = async (req, res) => {
             response.verified = false;
             response.error = 'Message not fetched';
             response.statusCode = 400;
+            return res.json(response);
         }
 
         // Get existing stream by ID
@@ -164,6 +166,7 @@ exports.verify = async (req, res) => {
             response.verified = false;
             response.error = 'Message not found';
             response.statusCode = 404;
+            return res.json(response);
         }
 
         // Verify payload integrity, compare fetched message hash with stored hash
@@ -185,6 +188,7 @@ exports.verify = async (req, res) => {
                 'Error: Integrity error'
             ]
             await logMessage(logs, 'malicious', params.streamId);
+            return res.json(response);
         }
 
         // Prepare response
@@ -219,31 +223,34 @@ exports.trade_verify = async (req, res) => {
 
         // MAM fetch producer stream payload
         const streamProducer = await fetchStream(params.streamIdProducer);
-        if (streamProducer.status !== 'success') {
+        if (streamProducer.status !== 'success' || !streamProducer.messages) {
             response.status = 'error';
             response.verified = false;
             response.error = streamProducer.error;
             response.statusCode = 400;
+            return res.json(response);
         }
         const fetchedProducerMessages = streamProducer.messages;
 
         // MAM fetch consumer stream payload
         const streamConsumer = await fetchStream(params.streamIdConsumer);
-        if (streamConsumer.status !== 'success') {
+        if (streamConsumer.status !== 'success' || !streamConsumer.messages) {
             response.status = 'error';
             response.verified = false;
             response.error = streamConsumer.error;
             response.statusCode = 400;
+            return res.json(response);
         }
         const fetchedConsumerMessages = streamConsumer.messages;
 
         // MAM fetch bid stream payload
         const streamAgreedBid = await fetchStream(params.streamIdAgreedBid);
-        if (streamAgreedBid.status !== 'success') {
+        if (streamAgreedBid.status !== 'success' || !streamAgreedBid.messages) {
             response.status = 'error';
             response.verified = false;
             response.error = get(streamAgreedBid, 'error');
             response.statusCode = 400;
+            return res.json(response);
         }
         const fetchedAgreedBidMessages = get(streamAgreedBid, 'messages');
 
@@ -257,6 +264,7 @@ exports.trade_verify = async (req, res) => {
                 response.verified = false;
                 response.error = 'Message not found';
                 response.statusCode = 404;
+                return res.json(response);
             }
 
             const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
@@ -274,6 +282,7 @@ exports.trade_verify = async (req, res) => {
                     'Error: Integrity error'
                 ]
                 logMessage(logs, 'malicious', params.streamIdProducer);
+                return res.json(response);
             }
         });
 
@@ -287,6 +296,7 @@ exports.trade_verify = async (req, res) => {
                 response.verified = false;
                 response.error = 'Message not found';
                 response.statusCode = 404;
+                return res.json(response);
             }
 
             const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
@@ -304,6 +314,7 @@ exports.trade_verify = async (req, res) => {
                     'Error: Integrity error'
                 ]
                 logMessage(logs, 'malicious', params.streamIdConsumer);
+                return res.json(response);
             }
         });
 
@@ -317,6 +328,7 @@ exports.trade_verify = async (req, res) => {
                 response.verified = false;
                 response.error = 'Message not found';
                 response.statusCode = 404;
+                return res.json(response);
             }
 
             const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
@@ -334,6 +346,7 @@ exports.trade_verify = async (req, res) => {
                     'Error: Integrity error'
                 ]
                 logMessage(logs, 'malicious', params.streamIdAgreedBid);
+                return res.json(response);
             }
         });
 
@@ -356,6 +369,7 @@ exports.trade_verify = async (req, res) => {
             response.verified = false;
             response.error = 'Amount mismatch error';
             response.statusCode = 400;
+            return res.json(response);
         }
         
         // Optionally verify starting time
