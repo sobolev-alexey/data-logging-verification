@@ -1,7 +1,7 @@
-const functions = require("firebase-functions");
+const functions = require('firebase-functions');
 const express = require('express');
 const bodyParser = require('body-parser');
-const cors = require("cors");
+const cors = require('cors');
 const { routesConfig } = require('./routes/routes');
 require('./firebaseInit');
 
