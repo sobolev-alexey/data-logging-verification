@@ -1,7 +1,7 @@
 const fs = require('fs');
 const axios = require('axios');
 
-const getConfig = (configFile = './config.json') => {
+const getConfig = (configFile = 'config.json') => {
   try {
       let config = {};
       let storedConfig = fs.readFileSync(configFile);
@@ -72,7 +72,7 @@ const generateFileName = streamId => {
     .replace(/ /g, '')
     .replace(/,/g, '-')
     .replace(/:/g, '.');
-  return `./${streamId}-${timestamp}.json`;
+  return `${streamId}-${timestamp}.json`;
 }
 
 const saveToFile = async (fileName, data) => {
