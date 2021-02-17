@@ -55,7 +55,7 @@ exports.log = async (req, res) => {
 
         // MAM attach payload
         const { metadata, explorer } = await publish(
-            { message: params.payload },
+            params.payload,
             params.tag || null, 
             streamMetadata, 
             params.streamId
@@ -168,7 +168,7 @@ exports.verify = async (req, res) => {
 
         // Verify payload integrity, compare fetched message hash with stored hash
         const payloadHash = getHash(JSON.stringify(params.payload));
-        const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
+        const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
         if (payloadHash !== storedMessage.hash || fetchedPayloadHash !== storedMessage.hash) {
             response.status = 'error';
             response.verified = false;
@@ -177,7 +177,7 @@ exports.verify = async (req, res) => {
             response.statusCode = 400;
             const logs = [
                 `Payload: ${JSON.stringify(params.payload)}`,
-                `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                `Fetched: ${JSON.stringify(fetchedMessage)}`,
                 `Stored: ${JSON.stringify(storedMessage)}`,
                 `Payload Hash: ${payloadHash}`,
                 `Fetched Payload Hash: ${fetchedPayloadHash}`,
@@ -193,7 +193,7 @@ exports.verify = async (req, res) => {
         response.explorer = getExplorerURL(root, sideKey, settings.tangle.network);
         
         if (params.returnPayload) {
-            response.fetchedPayload = fetchedMessage.message;
+            response.fetchedPayload = fetchedMessage;
         }
         if (params.returnMetadata) {
             response.metadata = storedMessage.metadata;
@@ -259,7 +259,7 @@ exports.trade_verify = async (req, res) => {
                 response.statusCode = 404;
             }
 
-            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
+            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
             if (fetchedPayloadHash !== storedMessage.hash) {
                 response.status = 'error';
                 response.verified = false;
@@ -267,7 +267,7 @@ exports.trade_verify = async (req, res) => {
                 response.error = 'Integrity error';
                 response.statusCode = 400;
                 const logs = [
-                    `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                    `Fetched: ${JSON.stringify(fetchedMessage)}`,
                     `Stored: ${JSON.stringify(storedMessage)}`,
                     `Fetched Payload Hash: ${fetchedPayloadHash}`,
                     `Stored Payload Hash: ${storedMessage.hash}`,
@@ -289,7 +289,7 @@ exports.trade_verify = async (req, res) => {
                 response.statusCode = 404;
             }
 
-            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage.message));
+            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
             if (fetchedPayloadHash !== storedMessage.hash) {
                 response.status = 'error';
                 response.verified = false;
@@ -297,7 +297,7 @@ exports.trade_verify = async (req, res) => {
                 response.error = 'Integrity error';
                 response.statusCode = 400;
                 const logs = [
-                    `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
+                    `Fetched: ${JSON.stringify(fetchedMessage)}`,
                     `Stored: ${JSON.stringify(storedMessage)}`,
                     `Fetched Payload Hash: ${fetchedPayloadHash}`,
                     `Stored Payload Hash: ${storedMessage.hash}`,
@@ -319,7 +319,7 @@ exports.trade_verify = async (req, res) => {
                 response.statusCode = 404;
             }
 
-            const fetchedPayloadHash = getHash(JSON.stringify(get(fetchedMessage, 'message')));
+            const fetchedPayloadHash = getHash(JSON.stringify(fetchedMessage));
             if (fetchedPayloadHash !== get(storedMessage, 'hash')) {
                 response.status = 'error';
                 response.verified = false;
@@ -327,7 +327,7 @@ exports.trade_verify = async (req, res) => {
                 response.error = 'Integrity error';
                 response.statusCode = 400;
                 const logs = [
-                    `Fetched: ${JSON.stringify(get(fetchedMessage, 'message'))}`,
+                    `Fetched: ${JSON.stringify(fetchedMessage)}`,
                     `Stored: ${JSON.stringify(storedMessage)}`,
                     `Fetched Payload Hash: ${fetchedPayloadHash}`,
                     `Stored Payload Hash: ${get(storedMessage, 'hash')}`,
@@ -340,17 +340,17 @@ exports.trade_verify = async (req, res) => {
         // Calculate produced energy
         response.energyProduced = 0;
         fetchedProducerMessages.forEach(messageObj => {
-            response.energyProduced += Number(get(messageObj, 'message.Quantity.Value'));
+            response.energyProduced += Number(get(messageObj, 'Quantity.Value'));
         });
 
         // Calculate consumed energy
         response.energyConsumed = 0;
         fetchedConsumerMessages.forEach(messageObj => {
-            response.energyConsumed += Number(get(messageObj, 'message.Quantity.Value'));
+            response.energyConsumed += Number(get(messageObj, 'Quantity.Value'));
         });
 
         // Verify energy amount match between producer, consumer, bid
-        response.energyAgreedBid = get(last(fetchedAgreedBidMessages), 'message.Quantity.Value');
+        response.energyAgreedBid = get(last(fetchedAgreedBidMessages), 'Quantity.Value');
         if (response.energyAgreedBid !== response.energyProduced || response.energyAgreedBid !== response.energyConsumed) {
             response.status = 'error';
             response.verified = false;

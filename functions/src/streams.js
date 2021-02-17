@@ -114,8 +114,7 @@ const fetch = async (channelState, streamId = null) => {
         
     if (fetched && fetched.length > 0) {
         for (let i = 0; i < fetched.length; i++) {
-          fetched[i] && fetched[i].message && 
-          result.push(JSON.parse(trytesToAscii(fetched[i].message)));
+          fetched[i] && result.push(JSON.parse(trytesToAscii(fetched[i])));
         }
     }
     
