@@ -1,19 +1,5 @@
 const cors = require('cors');
-const { 
-    verifyToken, 
-    login,
-    completeLogin,
-    register,
-    completeRegistration
-} = require("./accessController");
-const { 
-    log, 
-    read,
-    verify,
-    trade_verify
-} = require("./dataController");
-const { isAuthenticated } = require("../auth/authenticated");
-const { isAuthorized } = require("../auth/authorized");
+const { log, read, verify, trade_verify } = require('./dataController');
 
 const whitelist = [
     'http://localhost:3000', 
@@ -34,14 +20,8 @@ const corsOptions = {
 };
 
 exports.routesConfig = app => {
-    app.post('/verify-token', cors(corsOptions), verifyToken);
-    app.post('/login', cors(corsOptions), login);
-    app.post('/register', cors(corsOptions), register);
-    app.get('/register-complete', cors(corsOptions), completeRegistration);
-    app.get('/login-complete', cors(corsOptions), completeLogin);
-
-    app.post('/log', cors(corsOptions), isAuthenticated, isAuthorized, log);
-    app.post('/read', cors(corsOptions), isAuthenticated, isAuthorized, read);
-    app.post('/verify', cors(corsOptions), isAuthenticated, isAuthorized, verify);
-    app.post('/trade_verify', cors(corsOptions), isAuthenticated, isAuthorized, trade_verify);
+    app.post('/log', cors(corsOptions), log);
+    app.post('/read', cors(corsOptions), read);
+    app.post('/verify', cors(corsOptions), verify);
+    app.post('/trade_verify', cors(corsOptions), trade_verify);
 }
