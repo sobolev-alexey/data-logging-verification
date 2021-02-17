@@ -1,49 +1,7 @@
-const firebase = require('firebase');
-const NodeRSA = require('node-rsa');
 const crypto = require('crypto');
 const isEmpty = require('lodash/isEmpty');
 const { fetch } = require("./streams");
 const { getStreamDetails } = require("./firebase");
-
-const generateKeys = () => {
-  try {
-    const keySize = 2048;
-    const rsaKeypair = new NodeRSA({ b: keySize });
-    if (rsaKeypair.getKeySize() === keySize && 
-      rsaKeypair.getMaxMessageSize() >= Math.round(keySize / 10) &&
-      rsaKeypair.isPrivate() &&
-      rsaKeypair.isPublic()
-    ) {
-      return { 
-        publicKey: rsaKeypair.exportKey('public'), 
-        privateKey: rsaKeypair.exportKey('private')
-      };
-    } else {
-      throw new Error('Key generation failed');
-    }
-  } catch (error) {
-    throw new Error(error);
-  }
-}
-
-const verifyToken = async token => {
-  const promise = new Promise((resolve, reject) => {
-    firebase.auth().signInWithCustomToken(token)
-      .then((userCredential) => {
-        const user = userCredential.user;
-        resolve({ 
-          uid: user.uid,
-          email: user.email,
-          emailVerified: user.emailVerified
-        });
-      })
-      .catch((error) => {
-        console.error('verifyToken', error.code, error.message);
-        reject(error);
-      });
-    });
-    return promise;
-};
 
 const isJSON = data => {
   let hasKeys = false;
@@ -66,17 +24,17 @@ const checkMessageTag = tag => {
   return regex.test(tag) && tag.length <= 27;
 }
 
-const fetchStream = async (groupId, streamId) => {
+const fetchStream = async streamId => {
   try {
-    // Get existing stream by ID + group ID
-    const streamDetails = await getStreamDetails(`${groupId}__${streamId}`);
+    // Get existing stream by ID
+    const streamDetails = await getStreamDetails(streamId);
 
     if (!streamDetails || isEmpty(streamDetails) || !streamDetails.metadata || isEmpty(streamDetails.metadata)) {
       return { status: "error", error: 'No stream metadata found', code: 404 };
     }
 
     // MAM fetch payload
-    const messages = await fetch(streamDetails.metadata, streamId, groupId);
+    const messages = await fetch(streamDetails.metadata, streamId);
 
     return { status: "success", messages, metadata: streamDetails.metadata };
   } catch (error) {
@@ -85,8 +43,6 @@ const fetchStream = async (groupId, streamId) => {
 }
 
 module.exports = {
-  generateKeys,
-  verifyToken,
   isJSON,
   getHash,
   checkMessageTag,
