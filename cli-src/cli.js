@@ -3,18 +3,15 @@ const inquirer = require('inquirer');
 const chalk = require('chalk');
 const { 
   updateConfig, parseJSON, isJSON, 
-  generateFileName, saveToFile, fixPublicKey
+  generateFileName, saveToFile
 } = require('./utils');
 const {
-  inputStreamId, inputGroupId, inputTag, inputType, inputKeyFile, inputEmail,
-  inputData, inputPublicKey, inputMessageIndex, inputReturnPayload, inputReturnMetadata,
+  inputStreamId, inputTag, inputType, inputData, 
+  inputMessageIndex, inputReturnPayload, inputReturnMetadata,
   inputStreamIdProducer, inputStreamIdConsumer, inputStreamIdAgreedBid,
-  inputPublicKeyProducer, inputPublicKeyConsumer, inputPublicKeyAgreedBid
 } = require('./inputs');
 const { startSpinner, stopSpinner } = require('./spinner');
 
-const register = require('./register');
-const login = require('./login');
 const log = require('./log');
 const read = require('./read');
 const verify = require('./verify');
@@ -54,88 +51,53 @@ const execute = async (message, func, file = false) => {
 const mainMenuMap = new Map([
   ['Log', async () => {
     console.clear();
-    const { streamId, groupId, data, type, tag, keyFile } = await inquirer.prompt([
-      inputStreamId, inputGroupId, inputData, inputType, inputTag, inputKeyFile
+    const { streamId, data, type, tag } = await inquirer.prompt([
+      inputStreamId, inputData, inputType, inputTag
     ]);
-    updateConfig({ streamId, groupId, type, tag, keyFile });
+    updateConfig({ streamId, type, tag });
     execute(
       'Appending data to stream, please wait...',
-      () => log(parseJSON(data), streamId, groupId, tag, type, keyFile)
+      () => log(parseJSON(data), streamId, tag, type)
     );
   }],
   ['Verify data', async () => {
     console.clear();
-    const { streamId, groupId, data, publicKey, messageIndex, returnPayload, returnMetadata, keyFile } = await inquirer.prompt([
-      inputStreamId, inputGroupId, inputData, inputPublicKey, inputMessageIndex,
-      inputReturnPayload, inputReturnMetadata, inputKeyFile
+    const { streamId, data, messageIndex, returnPayload, returnMetadata } = await inquirer.prompt([
+      inputStreamId, inputData, inputMessageIndex, inputReturnPayload, inputReturnMetadata
     ]);
-    updateConfig({ streamId, groupId, keyFile });
+    updateConfig({ streamId });
     execute(
       'Verifying message...',
-      () => verify(parseJSON(data), streamId, groupId, fixPublicKey(publicKey), messageIndex, returnPayload, returnMetadata, keyFile),
+      () => verify(parseJSON(data), streamId, messageIndex, returnPayload, returnMetadata),
       generateFileName(streamId)
     );
   }],
   ['Verify trade', async () => {
     console.clear();
     const { 
-      streamIdProducer, publicKeyProducer, 
-      streamIdConsumer, publicKeyConsumer,
-      streamIdAgreedBid, publicKeyAgreedBid,
-      groupId, returnPayload, returnMetadata, keyFile 
+      streamIdProducer, streamIdConsumer, streamIdAgreedBid, returnPayload, returnMetadata 
     } = await inquirer.prompt([
-      inputStreamIdProducer, inputPublicKeyProducer, 
-      inputStreamIdConsumer, inputPublicKeyConsumer,
-      inputStreamIdAgreedBid, inputPublicKeyAgreedBid,
-      inputGroupId, inputReturnPayload, inputReturnMetadata, inputKeyFile
+      inputStreamIdProducer, inputStreamIdConsumer, inputStreamIdAgreedBid,
+      inputReturnPayload, inputReturnMetadata
     ]);
-    updateConfig({ groupId, keyFile });
     execute(
       'Verifying trade...',
       () => trade_verify(
-        streamIdProducer, fixPublicKey(publicKeyProducer), 
-        streamIdConsumer, fixPublicKey(publicKeyConsumer), 
-        streamIdAgreedBid, fixPublicKey(publicKeyAgreedBid), 
-        groupId, returnPayload, returnMetadata, keyFile
+        streamIdProducer, streamIdConsumer, streamIdAgreedBid, returnPayload, returnMetadata
       ),
       generateFileName(streamIdAgreedBid)
     );
   }],
   ['Index', async () => {
     console.clear();
-    const { streamId, groupId, keyFile } = await inquirer.prompt([
-      inputStreamId, inputGroupId, inputKeyFile
-    ]);
-    updateConfig({ streamId, groupId, keyFile });
+    const { streamId } = await inquirer.prompt([ inputStreamId ]);
+    updateConfig({ streamId });
     execute(
       'Retrieving data stream...',
-      () => read(streamId, groupId, keyFile),
+      () => read(streamId),
       generateFileName(streamId)
     );
   }],
-  [new inquirer.Separator()],
-  ['Login', async () => {
-    console.clear();
-    const { email, keyFile } = await inquirer.prompt([
-      inputEmail, inputKeyFile
-    ]);
-    updateConfig({ email, keyFile });
-    execute(
-      'Click on the link in your email to confirm login.',
-      () => login(email, keyFile)
-    )
-  }],
-  ['Register', async () => {
-    console.clear();
-    const { email, groupId, keyFile } = await inquirer.prompt([
-      inputEmail, inputGroupId, inputKeyFile
-    ]);
-    updateConfig({ email, keyFile });
-    execute(
-      'Click on the link in your email to confirm registration.',
-      () => register(email, groupId, keyFile)
-    )
-   }],
   [new inquirer.Separator()],
   ['Exit', () => {
     console.log("exiting now");
@@ -148,7 +110,7 @@ const showMainMenu = () => {
     type: 'rawlist',
     name: 'mainChoice',
     message: 'Please select a type of request',
-    pageSize: 10,
+    pageSize: 7,
     choices: Array.from(mainMenuMap.entries()).map(arr => arr[0])
   }]).then(async answers => {
     mainMenuMap.get(answers.mainChoice)();

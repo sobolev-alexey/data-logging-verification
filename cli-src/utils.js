@@ -30,50 +30,10 @@ const updateConfig = (values, configFile = './config.json') => {
   }
 }
 
-const getToken = () => {
+const callApi = async (url, payload) => {
   try {
-      let token = {};
-      let storedToken = fs.readFileSync('./token.json');
-      if (storedToken) {
-          token = storedToken.toString();
-      }
-      return token;
-  } catch (error) {
-      throw new Error(error);
-  }
-}
-
-const getKeys = (keysFile = './keys.json') => {
-  try {
-      let keys = {};
-      let storedKeys = fs.readFileSync(keysFile);
-      if (storedKeys) {
-          keys = JSON.parse(storedKeys.toString());
-      }
-      return keys;
-  } catch (error) {
-      throw new Error(error);
-  }
-}
-
-const validateEmail = email => {
-  const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  return re.test(String(email).toLowerCase());
-}
-
-const callApi = async (url, payload, auth = false) => {
-  try {
-    const headers = {
-      "Content-Type": "application/json"
-    };
-
-    if (auth) {
-      headers.Authorization = `Bearer ${getToken()}`;
-    }
-
     const config = getConfig();
-
-    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload, { headers })
+    const response = await axios.post(`${config && config.serviceUrl}/${url}`, payload);
     return response && response.data;
   } catch (error) {
     // error.message
@@ -90,15 +50,6 @@ const callApi = async (url, payload, auth = false) => {
     };
   }
 };
-
-const generatePayload = () => {
-  const payload = {
-    message: 'Hello World!',
-    timestamp: (new Date()).toLocaleString()
-  }
-
-  return payload;
-}
 
 const parseJSON = string =>
   JSON.parse(string.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2": '));
@@ -132,18 +83,12 @@ const saveToFile = async (fileName, data) => {
   }
 }
 
-const fixPublicKey = key => key.split('\\n').join('\n');
-
 module.exports = {
   getConfig,
-  getKeys,
-  generatePayload,
   callApi,
   updateConfig,
-  validateEmail,
   parseJSON,
   isJSON,
   generateFileName,
   saveToFile,
-  fixPublicKey
 };

@@ -11,9 +11,7 @@
     "axios": "^0.21.1",
     "chalk": "^4.1.0",
     "clui": "^0.3.6",
-    "inquirer": "^7.3.3",
-    "node-rsa": "^1.1.1",
-    "randomstring": "^1.1.5"
+    "inquirer": "^7.3.3"
   },
   "devDependencies": {
     "pkg": "^4.4.9"

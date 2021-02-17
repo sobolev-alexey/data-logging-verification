@@ -1,32 +1,14 @@
 const chalk = require('chalk');
-const { signMessage } = require('./encryption');
-const { getKeys, callApi } = require('./utils');
+const { callApi } = require('./utils');
 
 const trade_verify = async (
-  streamIdProducer, publicKeyProducer, 
-  streamIdConsumer, publicKeyConsumer, 
-  streamIdAgreedBid, publicKeyAgreedBid, 
-  groupId, returnPayload, returnMetadata, keyFile
+  streamIdProducer, streamIdConsumer, streamIdAgreedBid, returnPayload, returnMetadata
 ) => {
   try {
-    const data = { streamIdProducer, streamIdConsumer, streamIdAgreedBid };
-    
-    // Get keys
-    const keys = getKeys(keyFile);
-
-    // Sign message
-    const signature = signMessage(keys.privateKey, data);
-
     const payload = { 
-      payload: data, 
-      signature: JSON.stringify(signature),
       streamIdProducer,
       streamIdConsumer,
       streamIdAgreedBid,
-      publicKeyProducer,
-      publicKeyConsumer, 
-      publicKeyAgreedBid,
-      groupId,
       returnPayload,
       returnMetadata
     };
