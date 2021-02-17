@@ -1,24 +1,5 @@
 const admin = require('firebase-admin');
 
-exports.getUser = async (userId) => {
-  // Get user
-  const userDocument = await admin
-    .firestore()
-    .collection('users')
-    .doc(userId)
-    .get();
-
-  // Check and return user
-  if (userDocument.exists) {
-    const user = userDocument.data();
-
-    return user;
-  }
-
-  console.log('User not in DB:', userId);
-  return null;
-};
-
 exports.getSettings = async () => {
   // Get settings
   const doc = await admin
@@ -35,44 +16,6 @@ exports.getSettings = async () => {
   console.error(message, doc);
   throw Error(message);
 };
-
-exports.register = async (uid, publicKey, groupId, user) => {
-  try {
-    await admin.firestore().collection('users').doc(uid).set({
-      publicKey, 
-      uid, 
-      emailVerified: false, 
-      email: user.email, 
-      claimedGroupId: groupId,
-      groups: ['temp']
-    });
-  } catch(error) {
-    console.error('Firebase register', error);
-    throw error;
-  }
-}
-
-exports.completeRegistration = async uid => {
-  try {
-    await admin.firestore().collection('users').doc(uid).set({
-      emailVerified: true
-    }, { merge: true });
-  } catch(error) {
-      console.error('Firebase completeRegistration', error);
-      throw error;
-  }
-}
-
-exports.completeLogin = async (uid, flag) => {
-  try {
-    await admin.firestore().collection('users').doc(uid).set({
-      loginConfirmed: flag
-    }, { merge: true });
-  } catch(error) {
-      console.error('Firebase completeLogin', error);
-      throw error;
-  }
-}
 
 exports.logMessage = async (messages, type, streamId = null, groupId = null) => {
   if (!streamId || !groupId) return;
