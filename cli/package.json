@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "main": "cli.js",
   "bin": "bin.js",
+  "scripts": {
+    "build": "pkg .",
+    "build-mac": "pkg . -t latest-macos-x64"
+  },
   "dependencies": {
     "axios": "^0.21.1",
     "chalk": "^4.1.0",
@@ -10,5 +14,8 @@
     "inquirer": "^7.3.3",
     "node-rsa": "^1.1.1",
     "randomstring": "^1.1.5"
+  },
+  "devDependencies": {
+    "pkg": "^4.4.9"
   }
 }
