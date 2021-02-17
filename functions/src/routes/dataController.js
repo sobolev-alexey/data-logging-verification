@@ -3,7 +3,6 @@ const last = require('lodash/last');
 const get = require('lodash/get');
 const { isJSON, checkMessageTag, getHash, fetchStream } = require("../helpers");
 const { publish, getExplorerURL } = require("../streams");
-const { verifySignature } = require("../encryption");
 const {
     getSettings,
     getStreamDetails,
@@ -19,16 +18,13 @@ exports.log = async (req, res) => {
         if (!params || 
             !params.payload ||
             !params.streamId ||
-            !params.groupId ||
             !params.type 
         ) {
             console.error("Log data failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
-        const { uid } = res.locals;
-
-        // Verify payload type
+        // Verify payload
         if (isEmpty(params.payload) || !isJSON(params.payload)) {
             return res.status(400).send({ status: "error", error: 'Wrong payload format' });
         }
@@ -41,9 +37,8 @@ exports.log = async (req, res) => {
             }
         }
 
-        // Get existing stream by ID + group ID
-        const streamId = `${params.groupId}__${params.streamId}`;
-        let streamDetails = await getStreamDetails(streamId);
+        // Get existing stream by ID
+        let streamDetails = await getStreamDetails(params.streamId);
         let streamMetadata = {};
 
         // If no stream found, create new stream
@@ -51,27 +46,19 @@ exports.log = async (req, res) => {
             streamDetails = {
                 created: (new Date()).toLocaleString().replace(/\//g, '.'),
                 createdTimestamp: Date.now(),
-                groupId: params.groupId,
                 lastIndex: 0,
-                streamId: params.streamId,
-                writers: [uid]
+                streamId: params.streamId
             }
         } else {
             streamMetadata = streamDetails && streamDetails.metadata;
-            
-            // Update list of stream writers
-            if (!streamDetails.writers.includes(uid)) {
-                streamDetails.writers.push(uid);
-            }
         }
 
         // MAM attach payload
         const { metadata, explorer } = await publish(
-            { message: params.payload, signature: params.signature },
+            { message: params.payload },
             params.tag || null, 
             streamMetadata, 
-            params.streamId, 
-            params.groupId
+            params.streamId
         );
 
         if (!metadata || isEmpty(metadata)) {
@@ -82,15 +69,13 @@ exports.log = async (req, res) => {
         
         // Calculate and store payload hash, timestamp, message index
         const message = {
-            createdBy: uid,
             hash: getHash(JSON.stringify(params.payload)),
             index: metadata && metadata.start,
-            signature: params.signature,
             type: params.type
         };
 
         // Store stream metadata & message
-        const result = await storeStreamMessage(streamId, streamDetails, message);
+        const result = await storeStreamMessage(params.streamId, streamDetails, message);
         if (typeof result !== 'boolean' || !result) {
             console.error('Store message failed', result);
             return res.status(400).send({ status: "error", error: 'Error while saving message' });
@@ -114,13 +99,13 @@ exports.read = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-            if (!params || !params.streamId || !params.groupId) {
+            if (!params || !params.streamId) {
             console.error("Read stream failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
 
         // MAM fetch payload
-        const result = await fetchStream(params.groupId, params.streamId);
+        const result = await fetchStream(params.streamId);
         if (result.status !== 'success') {
             return res.status(result.code).send({ status: result.status, error: result.error });
         }
@@ -136,13 +121,7 @@ exports.verify = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-        if (!params || 
-            !params.payload ||
-            !params.streamId ||
-            !params.groupId ||
-            !params.publicKey 
-        ) {
-
+        if (!params || !params.payload || !params.streamId) {
             console.error("Verify message failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
@@ -155,7 +134,7 @@ exports.verify = async (req, res) => {
         }
 
         // MAM fetch payload
-        const result = await fetchStream(params.groupId, params.streamId);
+        const result = await fetchStream(params.streamId);
         if (result.status !== 'success') {
             response.status = 'error';
             response.verified = false;
@@ -176,9 +155,8 @@ exports.verify = async (req, res) => {
             response.statusCode = 400;
         }
 
-        // Get existing stream by ID + group ID
-        const streamId = `${params.groupId}__${params.streamId}`;
-        const storedMessages = await getStreamMessages(streamId);
+        // Get existing stream by ID
+        const storedMessages = await getStreamMessages(params.streamId);
 
         const storedMessage = storedMessages.find(msg => msg.index === index);
         if (isEmpty(storedMessage) || !isJSON(storedMessage)) {
@@ -206,26 +184,7 @@ exports.verify = async (req, res) => {
                 `Stored Payload Hash: ${storedMessage.hash}`,
                 'Error: Integrity error'
             ]
-            await logMessage(logs, 'malicious', params.streamId, params.groupId);
-        }
-
-        // Verify signature of fetched message with the provided public key, flag malicious
-        const signature = Buffer.from(JSON.parse(fetchedMessage.signature));
-        const signatureVerificationResult = await verifySignature(params.publicKey, fetchedMessage.message, signature);
-        if (!signatureVerificationResult) {
-            response.status = 'error';
-            response.verified = false;
-            response.malicious = true;
-            response.error = 'Wrong signature';
-            response.statusCode = 400;
-            const logs = [
-                `Payload: ${JSON.stringify(params.payload)}`,
-                `Fetched: ${JSON.stringify(fetchedMessage.message)}`,
-                `Fetched Signature: ${JSON.stringify(fetchedMessage.signature)}`,
-                'Error: Wrong signature'
-            ]
-            await logMessage(logs, 'malicious', params.streamId, params.groupId);
-
+            await logMessage(logs, 'malicious', params.streamId);
         }
 
         // Prepare response
@@ -251,14 +210,7 @@ exports.trade_verify = async (req, res) => {
     try {
         // Check Fields
         const params = req.body;
-        if (!params || 
-            !params.streamIdProducer   ||
-            !params.streamIdConsumer   ||
-            !params.streamIdAgreedBid  ||
-            !params.publicKeyProducer  ||
-            !params.publicKeyConsumer  || 
-            !params.publicKeyAgreedBid
-        ) {
+        if (!params || !params.streamIdProducer || !params.streamIdConsumer || !params.streamIdAgreedBid) {
             console.error("Verify trade failed. Params: ", params);
             return res.status(400).json({ error: "Ensure all fields are included" });
         }
@@ -266,7 +218,7 @@ exports.trade_verify = async (req, res) => {
         const response = { status: "success", verified: true, statusCode: 200 };
 
         // MAM fetch producer stream payload
-        const streamProducer = await fetchStream(params.groupId, params.streamIdProducer);
+        const streamProducer = await fetchStream(params.streamIdProducer);
         if (streamProducer.status !== 'success') {
             response.status = 'error';
             response.verified = false;
@@ -276,7 +228,7 @@ exports.trade_verify = async (req, res) => {
         const fetchedProducerMessages = streamProducer.messages;
 
         // MAM fetch consumer stream payload
-        const streamConsumer = await fetchStream(params.groupId, params.streamIdConsumer);
+        const streamConsumer = await fetchStream(params.streamIdConsumer);
         if (streamConsumer.status !== 'success') {
             response.status = 'error';
             response.verified = false;
@@ -286,7 +238,7 @@ exports.trade_verify = async (req, res) => {
         const fetchedConsumerMessages = streamConsumer.messages;
 
         // MAM fetch bid stream payload
-        const streamAgreedBid = await fetchStream(params.groupId, params.streamIdAgreedBid);
+        const streamAgreedBid = await fetchStream(params.streamIdAgreedBid);
         if (streamAgreedBid.status !== 'success') {
             response.status = 'error';
             response.verified = false;
@@ -295,68 +247,8 @@ exports.trade_verify = async (req, res) => {
         }
         const fetchedAgreedBidMessages = get(streamAgreedBid, 'messages');
 
-        // Verify signature of fetched producer message with the provided producer public key, flag malicious
-        fetchedProducerMessages.forEach((messageObj, index) => {
-            const signature = Buffer.from(JSON.parse(messageObj.signature));
-            const signatureVerificationResult = verifySignature(params.publicKeyProducer, messageObj.message, signature);
-            if (!signatureVerificationResult) {
-                response.status = 'error';
-                response.verified = false;
-                response.malicious = true;
-                response.error = 'Wrong signature';
-                response.statusCode = 400;
-                const logs = [
-                    `Data stream: producer ${params.streamIdProducer}`,
-                    `Fetched: ${JSON.stringify(messageObj)}`,
-                    `Message index: ${index}`,
-                    'Error: Wrong signature'
-                ]
-                logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
-            }
-        });
-
-        // Verify signature of fetched consumer message with the provided consumer public key, flag malicious
-        fetchedConsumerMessages.forEach((messageObj, index) => {
-            const signature = Buffer.from(JSON.parse(messageObj.signature));
-            const signatureVerificationResult = verifySignature(params.publicKeyConsumer, messageObj.message, signature);
-            if (!signatureVerificationResult) {
-                response.status = 'error';
-                response.verified = false;
-                response.malicious = true;
-                response.error = 'Wrong signature';
-                response.statusCode = 400;
-                const logs = [
-                    `Data stream: consumer ${params.streamIdConsumer}`,
-                    `Fetched: ${JSON.stringify(messageObj)}`,
-                    `Message index: ${index}`,
-                    'Error: Wrong signature'
-                ]
-                logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
-            }
-        });
-        
-        // Verify signature of fetched bid message with the provided bid public key, flag malicious
-        fetchedAgreedBidMessages.forEach((messageObj, index) => {
-            const signature = Buffer.from(JSON.parse(get(messageObj, 'signature')));
-            const signatureVerificationResult = verifySignature(params.publicKeyAgreedBid, get(messageObj, 'message'), signature);
-            if (!signatureVerificationResult) {
-                response.status = 'error';
-                response.verified = false;
-                response.malicious = true;
-                response.error = 'Wrong signature';
-                response.statusCode = 400;
-                const logs = [
-                    `Data stream: agreed bid ${params.streamIdAgreedBid}`,
-                    `Fetched: ${JSON.stringify(messageObj)}`,
-                    `Message index: ${index}`,
-                    'Error: Wrong signature'
-                ]
-                logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
-            }
-        });
-
         // Verify producer payload integrity, compare fetched message hash with stored hash
-        const storedProducerMessages = await getStreamMessages(`${params.groupId}__${params.streamIdProducer}`);
+        const storedProducerMessages = await getStreamMessages(params.streamIdProducer);
         storedProducerMessages.sort((a, b) => a.index - b.index).forEach((storedMessage, index) => {
             const fetchedMessage = fetchedProducerMessages[index];
             
@@ -381,12 +273,12 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${storedMessage.hash}`,
                     'Error: Integrity error'
                 ]
-                logMessage(logs, 'malicious', params.streamIdProducer, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdProducer);
             }
         });
 
         // Verify consumer payload integrity, compare fetched message hash with stored hash
-        const storedConsumerMessages = await getStreamMessages(`${params.groupId}__${params.streamIdConsumer}`);
+        const storedConsumerMessages = await getStreamMessages(params.streamIdConsumer);
         storedConsumerMessages.sort((a, b) => a.index - b.index).forEach((storedMessage, index) => {
             const fetchedMessage = fetchedConsumerMessages[index];
             
@@ -411,12 +303,12 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${storedMessage.hash}`,
                     'Error: Integrity error'
                 ]
-                logMessage(logs, 'malicious', params.streamIdConsumer, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdConsumer);
             }
         });
 
         // Verify bid payload integrity, compare fetched message hash with stored hash
-        const storedAgreedBidMessages = await getStreamMessages(`${params.groupId}__${params.streamIdAgreedBid}`);
+        const storedAgreedBidMessages = await getStreamMessages(params.streamIdAgreedBid);
         storedAgreedBidMessages.sort((a, b) => get(a, 'index') - get(b, 'index')).forEach((storedMessage, index) => {
             const fetchedMessage = fetchedAgreedBidMessages[index];
             
@@ -441,7 +333,7 @@ exports.trade_verify = async (req, res) => {
                     `Stored Payload Hash: ${get(storedMessage, 'hash')}`,
                     'Error: Integrity error'
                 ]
-                logMessage(logs, 'malicious', params.streamIdAgreedBid, params.groupId);
+                logMessage(logs, 'malicious', params.streamIdAgreedBid);
             }
         });
 
